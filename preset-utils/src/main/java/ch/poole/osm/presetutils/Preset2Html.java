@@ -51,7 +51,7 @@ public class Preset2Html {
 		pw.write("<html xmlns=\"http://www.w3.org/1999/xhtml\">");
 		pw.write("<head>");
 		pw.write("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\"/>");
-		pw.write("<link rel=\"stylesheet\" href=\"preset.css\" type=\"text/css\" />");
+		pw.write("<link rel=\"stylesheet\" href=\"website/preset.css\" type=\"text/css\" />");
 		pw.write("</head><body>");
 		
         saxParser.parse(input, new DefaultHandler() {
