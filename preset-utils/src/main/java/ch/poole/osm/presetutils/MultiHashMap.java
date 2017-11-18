@@ -29,13 +29,16 @@ public class MultiHashMap<K, V> implements Serializable {
 	private Map<K, Set<V>> map;
 	private boolean sorted;
 	
-	/** Creates a regular, unsorted MultiHashMap */
+	/** 
+	 * Creates a regular, unsorted MultiHashMap  
+	 */
 	public MultiHashMap() {
 		this(false);
 	}
 	
 	/**
 	 * Creates a MultiHashMap.
+	 * 
 	 * @param sorted if true, Tree maps/sets will be used, if false, regular HashMap/HashSets will be used.
 	 */
 	public MultiHashMap(boolean sorted) {
@@ -49,7 +52,8 @@ public class MultiHashMap<K, V> implements Serializable {
 	
 	/**
 	 * Check for key in map
-	 * @param key
+	 * 
+	 * @param key  the key we are looking for
 	 * @return true if key exists in map
 	 */
 	public boolean containsKey(K key) {
@@ -58,7 +62,10 @@ public class MultiHashMap<K, V> implements Serializable {
 		
 	/**
 	 * Adds item to the set of values associated with the key (null items are not added)
-	 * @returns true if the element was added, false if it was already in the set or null
+	 * 
+	 * @param key  key to add
+	 * @param item item to add
+	 * @return true if the element was added, false if it was already in the set or null
 	 */
 	public boolean add(K key, V item) {
 		Set<V> values = map.get(key);
@@ -72,6 +79,7 @@ public class MultiHashMap<K, V> implements Serializable {
 	
 	/**
 	 * Adds all items to the set of values associated with the key
+	 * 
 	 * @param key the key
 	 * @param items an array containing the items
 	 */
@@ -86,6 +94,7 @@ public class MultiHashMap<K, V> implements Serializable {
 	
 	/**
 	 * Adds all items to the set of values associated with the key
+	 * 
 	 * @param key the key
 	 * @param items a set containing the items
 	 */
@@ -100,7 +109,8 @@ public class MultiHashMap<K, V> implements Serializable {
 
 	/**
 	 * Removes the item from the set associated with the given key
-	 * @param key
+	 * 
+	 * @param key  the key of the item to remove
 	 * @param item the item to remove
 	 * @return true if the item was in the set
 	 */
@@ -112,7 +122,8 @@ public class MultiHashMap<K, V> implements Serializable {
 
 	/**
 	 * Completely removes all values associated with a key
-	 * @param key
+	 * 
+	 * @param key  key to remove all items for
 	 */
 	public void removeKey(K key) {
 		map.remove(key);
@@ -120,7 +131,8 @@ public class MultiHashMap<K, V> implements Serializable {
 	
 	/**
 	 * Gets the list of items associated with a key.
-	 * @param key
+	 * 
+	 * @param key  key we want the values for
 	 * @return a unmodifiable list of the items associated with the key, may be empty but never null
 	 */
 	public Set<V> get(K key) {
@@ -136,13 +148,19 @@ public class MultiHashMap<K, V> implements Serializable {
 		map.clear();
 	}
 
+	/**
+	 * Get all keys as a Set
+	 * 
+	 * @return a Set containing the keys
+	 */
 	public Set<K> getKeys() {
 		return map.keySet();
 	}
 
 	/** 
-	 * return all values
-	 * @return
+	 * Return all values
+	 * 
+	 * @return a Set of all values
 	 */
 	public Set<V> getValues() {
 		Set<V> retval = new LinkedHashSet<V>();
@@ -153,8 +171,9 @@ public class MultiHashMap<K, V> implements Serializable {
 	}
 
 	/**
-	 * add all key/values from source to this Map
-	 * @param source
+	 * Add all key/values from source to this Map
+	 * 
+	 * @param source add all entries from thiw MultiHashMap
 	 */
 	public void addAll(MultiHashMap<K, V> source) {
 		for (K key:source.getKeys()) {
