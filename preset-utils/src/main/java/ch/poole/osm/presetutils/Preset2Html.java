@@ -100,8 +100,8 @@ public class Preset2Html {
             		buffer.append("<div class=\"group\"><h" + (groupCount + 1) + ">"); 
             		String groupIcon = attr.getValue("icon");
             		if (groupIcon != null && !"".equals(groupIcon)) {
-            			String groupIcon2 = groupIcon.replace("ICONPATH:", "icons/png/");
-            			groupIcon2 = groupIcon2.replace("ICONTYPE", "png");
+            			String groupIcon2 = groupIcon.replace("${ICONPATH}", "icons/png/");
+            			groupIcon2 = groupIcon2.replace("${ICONTYPE}", "png");
             			if (!groupIcon.equals(groupIcon2)) {
             			    buffer.append("<img src=\""+groupIcon2+"\" style=\"vertical-align:middle\"> ");
             			}
@@ -114,8 +114,8 @@ public class Preset2Html {
             		preset = attr.getValue("name");
             		icon = attr.getValue("icon");
             		if (icon != null && !"".equals(icon)) {
-            			icon2 = icon.replace("ICONPATH:", "icons/png/");
-            			icon2 = icon2.replace("ICONTYPE", "png");
+            			icon2 = icon.replace("${ICONPATH}", "icons/png/");
+            			icon2 = icon2.replace("${ICONTYPE}", "png");
             		}
             	} else if ("chunk".equals(name)) {
             		chunk = attr.getValue("id");
