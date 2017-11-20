@@ -343,8 +343,7 @@ public class Preset2Html {
 			if (line.hasOption( "josm")) {
 			    p.setJosmLink(line.getOptionValue("josm"));
 			}
-		}
-		catch(ParseException exp) {
+		} catch(ParseException exp) {
 			HelpFormatter formatter = new HelpFormatter();
 			formatter.printHelp( "Preset2Pot", options );
 			return;
