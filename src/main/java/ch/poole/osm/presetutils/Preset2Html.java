@@ -37,7 +37,7 @@ import org.xml.sax.helpers.DefaultHandler;
 
 public class Preset2Html {
 
-	HashMap<String,MultiHashMap<String,String>>msgs = new HashMap<String,MultiHashMap<String,String>>();
+	HashMap<String,MultiHashMap<String,String>>msgs = new HashMap<>();
 	
 	String inputFilename;
 	String vespucciLink = null;
@@ -59,16 +59,16 @@ public class Preset2Html {
         	String group = null;
         	String preset = null;
         	String chunk = null;
-        	HashMap<String,String> chunkKeys = new HashMap<String,String>();
-        	HashMap<String,String> chunkOptionalKeys = new HashMap<String,String>();
-        	HashMap<String,String> chunkLinks = new HashMap<String,String>();
+        	HashMap<String,String> chunkKeys = new HashMap<>();
+        	HashMap<String,String> chunkOptionalKeys = new HashMap<>();
+        	HashMap<String,String> chunkLinks = new HashMap<>();
         	String icon = null;
         	String icon2 = null;
         	String keys = null;
         	String optionalKeys = null;
         	String links = null;
         	boolean optional = false;
-        	StringBuffer buffer = new StringBuffer();
+        	StringBuilder buffer = new StringBuilder();
         	
             /** 
              * ${@inheritDoc}.
@@ -325,44 +325,58 @@ public class Preset2Html {
 
 		CommandLineParser parser = new DefaultParser();
 		try {
-			// parse the command line arguments
-			CommandLine line = parser.parse( options, args );
-			if (line.hasOption( "input")) {
-			    // initialise the member variable
-			    String input = line.getOptionValue("input");
-			    p.setInputFilename(input);
-			    is = new FileInputStream(input);
-			}
-			if (line.hasOption( "output")) {
-			    String output = line.getOptionValue("output");
-			    os = new FileOutputStream(output);
-			}
-			if (line.hasOption( "vespucci")) {
-			    p.setVespucciLink(line.getOptionValue("vespucci"));
-			}
-			if (line.hasOption( "josm")) {
-			    p.setJosmLink(line.getOptionValue("josm"));
-			}
-		} catch(ParseException exp) {
-			HelpFormatter formatter = new HelpFormatter();
-			formatter.printHelp( "Preset2Pot", options );
-			return;
-		} catch (FileNotFoundException e) {
-			System.err.println("File not found: " + e.getMessage());
-			return;
-		}
-		
-		try {
-			p.setInputFilename("master_preset.xml");
-			p.parseXML(is, new PrintWriter(os));
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-		} catch (ParserConfigurationException e) {
-			e.printStackTrace();
-		} catch (SAXException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
+		    try {
+		        // parse the command line arguments
+		        CommandLine line = parser.parse( options, args );
+		        if (line.hasOption( "input")) {
+		            // initialise the member variable
+		            String input = line.getOptionValue("input");
+		            p.setInputFilename(input);
+		            is = new FileInputStream(input);
+		        }
+		        if (line.hasOption( "output")) {
+		            String output = line.getOptionValue("output");
+		            os = new FileOutputStream(output);
+		        }
+		        if (line.hasOption( "vespucci")) {
+		            p.setVespucciLink(line.getOptionValue("vespucci"));
+		        }
+		        if (line.hasOption( "josm")) {
+		            p.setJosmLink(line.getOptionValue("josm"));
+		        }
+		    } catch(ParseException exp) {
+		        HelpFormatter formatter = new HelpFormatter();
+		        formatter.printHelp( "Preset2Pot", options );
+		        return;
+		    } catch (FileNotFoundException e) {
+		        System.err.println("File not found: " + e.getMessage());
+		        return;
+		    }
+
+		    try {
+		        p.setInputFilename("master_preset.xml");
+		        p.parseXML(is, new PrintWriter(os));
+		    } catch (FileNotFoundException e) {
+		        e.printStackTrace();
+		    } catch (ParserConfigurationException e) {
+		        e.printStackTrace();
+		    } catch (SAXException e) {
+		        e.printStackTrace();
+		    } catch (IOException e) {
+		        e.printStackTrace();
+		    }
+		} finally {
+		    try {
+		        is.close();
+		        os.close();
+		    } catch (IOException e) {
+		        //NOSONAR
+		    }
+            try {
+                os.close();
+            } catch (IOException e) {
+                //NOSONAR
+            }
 		}
 	}
 }

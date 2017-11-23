@@ -25,6 +25,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.jetbrains.annotations.Nullable;
 import org.xml.sax.Attributes;
 import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
@@ -44,12 +45,12 @@ import org.xml.sax.helpers.DefaultHandler;
 
 public class Preset2Pot {
 
-	LinkedHashMap<String,MultiHashMap<String,String>>msgs = new LinkedHashMap<String,MultiHashMap<String,String>>();
+	LinkedHashMap<String,MultiHashMap<String,String>>msgs = new LinkedHashMap<>();
 	
 	String inputFilename;
 	MyHandler handler;
 	
-	
+	@Nullable
 	public Locator getLocator() {
 		return handler.locator;
 	}
@@ -255,73 +256,87 @@ public class Preset2Pot {
 	}
 	
 	public static void main(String[] args) {
-		try {
-			// defaults
-			InputStream is = System.in;
-			OutputStreamWriter os = new OutputStreamWriter(System.out, "UTF-8");
+	    // defaults
+        InputStream is = System.in;
+        OutputStreamWriter os = null;
+	    try {
+	        os = new OutputStreamWriter(System.out, "UTF-8");
 
-			Preset2Pot p = new Preset2Pot();
-			p.setInputFilename("stdin");
+	        Preset2Pot p = new Preset2Pot();
+	        p.setInputFilename("stdin");
 
-			// arguments			
-			Option inputFile = Option.builder("i")
-			        .longOpt("input")
-			        .hasArg()
-			        .desc("input preset file, default: standard in")
-			        .build();
+	        // arguments			
+	        Option inputFile = Option.builder("i")
+	                .longOpt("input")
+	                .hasArg()
+	                .desc("input preset file, default: standard in")
+	                .build();
 
-			Option outputFile = Option.builder("o")
-                    .longOpt("output")
-                    .hasArg()
-                    .desc("output .pot file, default: standard out")
-                    .build();
-			
-			Options options = new Options();
+	        Option outputFile = Option.builder("o")
+	                .longOpt("output")
+	                .hasArg()
+	                .desc("output .pot file, default: standard out")
+	                .build();
 
-			options.addOption(inputFile);
-			options.addOption(outputFile);
+	        Options options = new Options();
 
-			CommandLineParser parser = new DefaultParser();
-			try {
-				// parse the command line arguments
-				CommandLine line = parser.parse( options, args );
-				if (line.hasOption( "input")) {
-					// initialise the member variable
-					String input = line.getOptionValue("input");
-					p.setInputFilename(input);
-					is = new FileInputStream(input);
-				}
-				if (line.hasOption( "output")) {
-					String output = line.getOptionValue("output");
-					os = new OutputStreamWriter(
-							new FileOutputStream(output), "UTF-8");
-				}
-			}
-			catch(ParseException exp) {
-				HelpFormatter formatter = new HelpFormatter();
-				formatter.printHelp( "Preset2Pot", options );
-				return;
-			} catch (FileNotFoundException e) {
-				System.err.println("File not found: " + e.getMessage());
-				return;
-			}
+	        options.addOption(inputFile);
+	        options.addOption(outputFile);
 
-			try {
-				p.setInputFilename("master_preset.xml");
-				p.parseXML(is);
-				p.dump2Pot(new PrintWriter(os));
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-			} catch (ParserConfigurationException e) {
-				e.printStackTrace();
-			} catch (SAXException e) {
-				System.err.println("Error at line " + p.getLocator()!=null?p.getLocator().getLineNumber():"unknown line");
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		} catch (UnsupportedEncodingException e1) {
-			e1.printStackTrace();
-		}
+	        CommandLineParser parser = new DefaultParser();
+	        try {
+	            // parse the command line arguments
+	            CommandLine line = parser.parse( options, args );
+	            if (line.hasOption( "input")) {
+	                // initialise the member variable
+	                String input = line.getOptionValue("input");
+	                p.setInputFilename(input);
+	                is = new FileInputStream(input);
+	            }
+	            if (line.hasOption( "output")) {
+	                String output = line.getOptionValue("output");
+	                os = new OutputStreamWriter(
+	                        new FileOutputStream(output), "UTF-8");
+	            }
+	        }
+	        catch(ParseException exp) {
+	            HelpFormatter formatter = new HelpFormatter();
+	            formatter.printHelp( "Preset2Pot", options );
+	            return;
+	        } catch (FileNotFoundException e) {
+	            System.err.println("File not found: " + e.getMessage());
+	            return;
+	        }
+
+	        try {
+	            p.setInputFilename("master_preset.xml");
+	            p.parseXML(is);
+	            p.dump2Pot(new PrintWriter(os));
+	        } catch (FileNotFoundException e) {
+	            e.printStackTrace();
+	        } catch (ParserConfigurationException e) {
+	            e.printStackTrace();
+	        } catch (SAXException e) {
+	            System.err.println("Error at line " + p.getLocator().getLineNumber());
+	            e.printStackTrace();
+	        }  catch (UnsupportedEncodingException e1) {
+	            e1.printStackTrace();
+	        }
+	    } catch (IOException e) {
+	        e.printStackTrace();   
+	    }  finally {
+	        try {
+	            is.close();
+	        } catch (IOException e) {
+	            //NOSONAR
+	        }
+	        try {
+	            if (os != null) {
+	                os.close();
+	            }
+	        } catch (IOException e) {
+	            //NOSONAR
+	        }
+	    }
 	}
 }
