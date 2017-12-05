@@ -17,7 +17,7 @@ apply plugin: 'maven-publish'
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
-version = '0.0.12'
+version = '0.1.0'
 def libName = "preset-utils"
 
 // In this section you declare where to find the dependencies of your project
@@ -37,6 +37,7 @@ dependencies {
     // This dependency is exported to consumers, that is to say found on their compile classpath.
     compile 'commons-cli:commons-cli:1.4'
     compile 'org.jetbrains:annotations:15.0'
+    compile "com.google.code.gson:gson:2.8.1"
 
     // Use JUnit test framework
     testCompile "junit:junit:4.12"

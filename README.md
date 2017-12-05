@@ -1,6 +1,6 @@
 # Preset utils
 
-A couple of utils for processing JOSM format presets for OSM editors.
+A couple of utils for processing JOSM format presets for OSM editors and related stuff.
 
 ## Preset2Pot
 
@@ -31,3 +31,13 @@ Further it expects _preset.css_ in the directory _website_
     -j,--josm <arg>       download link JOSM format, default: none
     -o,--output <arg>     output .html file, default: standard out
     -v,--vespucci <arg>   download link vespucci format, default: none
+    
+## Synonyms
+
+Retrieve synonym values from the iD editor repository and output a json object containing them.
+
+### Usage
+ 
+     -l,--lang <arg>       language code to retrieve the synonyms for, default: en
+     -o,--output <arg>     output json file, default: standard out
+     -x,--exclude <args>	  skip any entries that contain the terms (for example "military")

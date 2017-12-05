@@ -347,7 +347,7 @@ public class Preset2Html {
 		        }
 		    } catch(ParseException exp) {
 		        HelpFormatter formatter = new HelpFormatter();
-		        formatter.printHelp( "Preset2Pot", options );
+		        formatter.printHelp( "Preset2Html", options );
 		        return;
 		    } catch (FileNotFoundException e) {
 		        System.err.println("File not found: " + e.getMessage());
@@ -369,7 +369,6 @@ public class Preset2Html {
 		} finally {
 		    try {
 		        is.close();
-		        os.close();
 		    } catch (IOException e) {
 		        //NOSONAR
 		    }
