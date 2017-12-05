@@ -6,9 +6,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -255,13 +257,13 @@ public class Synonyms {
                 }
             } catch(ParseException exp) {
                 HelpFormatter formatter = new HelpFormatter();
-                formatter.printHelp( "Preset2Pot", options );
+                formatter.printHelp( "Synonyms", options );
                 return;
             } catch (FileNotFoundException e) {
                 System.err.println("File not found: " + e.getMessage());
                 return;
             }
-            getSynonyms(lang, new PrintWriter(os));
+            getSynonyms(lang, new PrintWriter(new OutputStreamWriter(os,StandardCharsets.UTF_8)));
         } finally {
             try {
                 os.close();

@@ -17,7 +17,7 @@ apply plugin: 'maven-publish'
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
-version = '0.1.1'
+version = '0.1.2'
 def libName = "preset-utils"
 
 // In this section you declare where to find the dependencies of your project
@@ -41,6 +41,13 @@ dependencies {
 
     // Use JUnit test framework
     testCompile "junit:junit:4.12"
+}
+
+task getSynonyms(type: JavaExec) {
+    main = "ch.poole.osm.presetutils.Synonyms"
+    classpath = sourceSets.main.runtimeClasspath
+    args('-lang',    'de',
+    	 '-x', 'military')
 }
 
 task sourcesJar(type: Jar) {
