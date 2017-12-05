@@ -40,4 +40,4 @@ Retrieve synonym values from the iD editor repository and output a json object c
  
      -l,--lang <arg>       language code to retrieve the synonyms for, default: en
      -o,--output <arg>     output json file, default: standard out
-     -x,--exclude <args>	  skip any entries that contain the terms (for example "military")
+     -x,--exclude <args>   skip any entries that contain the terms (for example "military")
