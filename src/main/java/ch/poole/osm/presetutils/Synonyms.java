@@ -53,7 +53,6 @@ public class Synonyms {
 		// Log.d("DiscardedTags","Parsing configuration file");
 
 		// https://raw.githubusercontent.com/openstreetmap/iD/master/dist/locales/de.json
-	    Map<String,Set<String>> synonyms = new HashMap<>();
 		InputStream is = null;
 		JsonReader reader = null;
 		try {
@@ -99,7 +98,9 @@ public class Synonyms {
 			                                jsonName = reader.nextName();
 			                                if ("name".equals(jsonName)) { // FIXME make order independent
 			                                    name = reader.nextString();
-			                                }
+			                                } else if ("terms".equals(jsonName)) { // in some cases name seems to be missing
+                                                terms = reader.nextString();
+                                            } 
 			                                if (reader.hasNext()) {
 			                                    jsonName = reader.nextName();
 			                                    if ("terms".equals(jsonName)) {
@@ -107,15 +108,20 @@ public class Synonyms {
 			                                    } 
 			                                }
 			                                reader.endObject();
-
-			                                if (name != null && terms != null && !"".equals(terms) && !terms.startsWith("<")) {
+			                                
+			                                Set<String> set = new HashSet<>();
+			                                if (terms != null && !"".equals(terms) && !terms.startsWith("<")) {
+			                                    String[] termsArray = terms.split("\\s*,\\s*");
+			                                    set.addAll(Arrays.asList(termsArray));
+			                                }
+			                                if (name != null && !"".equals(name)) {
+			                                    set.add(name);
+			                                }
+			                               if (set.size() > 0) {   
+			                                    // output
 			                                    if (!first) {
                                                     printWriter.write(",\n");
                                                 }
-			                                    String[] termsArray = terms.split("\\s*,\\s*");
-			                                    Set<String> set = new HashSet<>(Arrays.asList(termsArray));
-			                                    set.add(name);
-			                                    synonyms.put(presetName, set);
 			                                    printWriter.write("\"" + presetName + "\":[\n");
 			                                    Iterator<String> iter = set.iterator();
 			                                    while (iter.hasNext()) {
