@@ -47,9 +47,7 @@ public class Synonyms {
 
 
 	/**
-	 * Implicit assumption that the list will be short and that it is OK to read in synchronously
-	 * @param printWriter 
-	 * @return 
+	 * @param printWriter PrintWriter for the file to write to
 	 */
     static void getSynonyms(String lang, PrintWriter printWriter) {	
 		// Log.d("DiscardedTags","Parsing configuration file");
