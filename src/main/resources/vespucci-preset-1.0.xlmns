@@ -28,7 +28,8 @@
                 <attribute name="description" type="string" />
                 <attribute name="link" type="string" />
                 <attribute name="baselanguage" type="string" />
-
+				<attribute name="object_keys" type="string" />
+				
                 <anyAttribute processContents="skip" />
             </extension>
         </complexContent>
@@ -178,6 +179,7 @@
         <attribute name="length" type="positiveInteger" />
         <attribute name="alternative_autocomplete_keys" type="string" />
         <attribute name="javascript" type="string" />
+        <attribute name="value_type" type="tns:value_type" />
 
         <attribute name="type" use="prohibited" />
         <attribute name="name" use="prohibited" />
@@ -328,4 +330,17 @@
         </restriction>
     </simpleType>
 
+	<simpleType name="value_type">
+    	<restriction base="string">
+            <enumeration value="opening_hours" />
+            <enumeration value="opening_hours_plus" />
+            <enumeration value="conditional" />
+            <enumeration value="integer" />
+            <enumeration value="website" />
+            <enumeration value="phone" />
+            <enumeration value="wikipedia" />
+            <enumeration value="wikidata" />
+        </restriction>
+    </simpleType>
+    
 </schema>
