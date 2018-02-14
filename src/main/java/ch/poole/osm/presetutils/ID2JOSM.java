@@ -9,6 +9,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -67,6 +68,7 @@ public class ID2JOSM {
         boolean                   snakeCase     = true;
 
         public void toJosm(PrintWriter writer) {
+            int baseIndent = 2;
             switch (fieldType) {
             case TEXT:
             case NUMBER:
@@ -83,10 +85,9 @@ public class ID2JOSM {
             case WIKIPEDIA:
                 if (keys != null) {
                     for (ValueAndDescription key : keys) {
-                        indent(writer, 3);
+                        indent(writer, baseIndent);
                         if (keys.size() == 1 && label != null) {
-                            writer.println("<text key=\"" + key.value + "\" text=\"" + label + "\""
-                                    + fieldType2Attribute(fieldType) + " />");
+                            writer.println("<text key=\"" + key.value + "\" text=\"" + label + "\"" + fieldType2Attribute(fieldType) + " />");
                         } else {
                             writer.println("<text key=\"" + key.value + "\"" + (key.description != null ? " text=\"" + key.description + "\"" : "")
                                     + fieldType2Attribute(fieldType) + " />");
@@ -99,91 +100,100 @@ public class ID2JOSM {
             case SEMICOMBO:
             case NETWORKCOMBO:
                 if (keys != null) {
-                    if (options != null) {
-                        for (ValueAndDescription key : keys) {
-                            indent(writer, 3);
-                            writer.println("<" + (FieldType.SEMICOMBO.equals(fieldType) ? "multiselect" : "combo") + " key=\"" + key.value + "\""
-                                    + (key.description != null ? " text=\"" + key.description + "\"" : ""));
-                            indent(writer, 4);
-                            writer.print("values=\"");
-                            for (int i = 0; i < options.size(); i++) {
-                                writer.print(options.get(i).value);
-                                if (i < options.size() - 1) {
-                                    writer.print(",");
-                                }
-                            }
-                            writer.println("\"");
-                            indent(writer, 4);
-                            writer.print("display_values=\"");
-                            for (int i = 0; i < options.size(); i++) {
-                                ValueAndDescription v = options.get(i);
-                                if (v.description != null && !"".equals(v.description)) {
-                                    writer.print(v.description);
-                                } else {
-                                    writer.print(v.value);
-                                }
-                                if (i < options.size() - 1) {
-                                    writer.print(",");
-                                }
-                            }
-                            writer.println("\" />");
+                    for (ValueAndDescription key : keys) {
+                        if (options == null) {
+                            optionsComment(writer, baseIndent);
+                            options = getOptionsFromTagInfo(key.value);
                         }
-                    } else {
-                        for (ValueAndDescription key : keys) {
-                            indent(writer, 3);
-                            writer.println("<text key=\"" + key.value + "\"" + (key.description != null ? " text=\"" + key.description + "\"" : "") + " />");
+                        indent(writer, baseIndent);
+                        writer.println("<" + (FieldType.SEMICOMBO.equals(fieldType) ? "multiselect" : "combo") + " key=\"" + key.value + "\""
+                                + (key.description != null ? " text=\"" + key.description + "\"" : ""));
+                        indent(writer, baseIndent + 1);
+                        writer.print("values=\"");
+                        for (int i = 0; i < options.size(); i++) {
+                            writer.print(options.get(i).value);
+                            if (i < options.size() - 1) {
+                                writer.print(",");
+                            }
                         }
+                        writer.println("\"");
+                        indent(writer, baseIndent + 1);
+                        writer.print("display_values=\"");
+                        for (int i = 0; i < options.size(); i++) {
+                            ValueAndDescription v = options.get(i);
+                            if (v.description != null && !"".equals(v.description)) {
+                                writer.print(v.description);
+                            } else {
+                                writer.print(v.value);
+                            }
+                            if (i < options.size() - 1) {
+                                writer.print(",");
+                            }
+                        }
+                        writer.println("\" />");
                     }
                 }
                 break;
             case MULTICOMBO:
                 if (keys != null && keys.size() == 1) {
-                    if (options != null) {
-                        for (ValueAndDescription v : options) {
-                            indent(writer, 3);
-                            writer.println("<check key=\"" + keys.get(0).value + v.value + "\""
-                                    + (v.description != null ? " text=\"" + v.description + "\"" : "") + " disable_off=\"true\" />");
-                        }
-                    } else {
-                        ValueAndDescription key = keys.get(0);
-                        indent(writer, 3);
-                        if (label != null ) {
-                            writer.println("<text key=\"" + key.value + "\" text=\"" + label + "\" />");
-                        } else {
-                            writer.println("<text key=\"" + key.value + "\"" + (key.description != null ? " text=\"" + key.description + "\"" : "") + " />");
-                        }
+                    ValueAndDescription key = keys.get(0);
+                    if (options == null) {
+                        optionsComment(writer, baseIndent);
+                        options = getKeysFromTagInfo(key.value);
                     }
+                    for (ValueAndDescription v : options) {
+                        indent(writer, baseIndent);
+                        writer.println("<check key=\"" + key.value + v.value + "\"" + (v.description != null ? " text=\"" + v.description + "\"" : "")
+                                + " disable_off=\"true\" />");
+                    }
+
                 }
                 break;
             case CHECK:
                 if (keys != null && keys.size() == 1) {
                     ValueAndDescription key = keys.get(0);
-                    indent(writer, 3);
+                    indent(writer, baseIndent);
                     if (label != null) {
-                        writer.println("<combo key=\"" + key.value + "\" text=\"" + label + "\""+ " values=\"yes,no\" />");
+                        writer.println("<combo key=\"" + key.value + "\" text=\"" + label + "\"" + " values=\"yes,no\" />");
                     } else {
-                        writer.println("<combo key=\"" + key.value + "\""
-                                + (key.description != null ? " text=\"" + key.description + "\"" : "") + " values=\"yes,no\" />");
-                    }
-                }
-                break;
-            case DEFAULTCHECK:          
-                if (keys != null && keys.size() == 1) {
-                    ValueAndDescription key = keys.get(0);
-                    indent(writer, 3);
-                    if (label != null) {
-                        writer.println("<check key=\"" + key.value + "\" text=\"" + label + "\" disable_off=\"true\" />");
-                    } else {
-                        writer.println("<check key=\"" + key.value + "\""
-                                + (key.description != null ? " text=\"" + key.description + "\"" : "") + " disable_off=\"true\" />");
+                        writer.println("<combo key=\"" + key.value + "\"" + (key.description != null ? " text=\"" + key.description + "\"" : "")
+                                + " values=\"yes,no\" />");
                     }
                 }
                 break;
             case ONEWAYCHECK:
+            case DEFAULTCHECK:
+                if (keys != null && keys.size() == 1) {
+                    ValueAndDescription key = keys.get(0);
+                    indent(writer, baseIndent);
+                    if (label != null) {
+                        writer.println("<check key=\"" + key.value + "\" text=\"" + label + "\" disable_off=\"true\" />");
+                    } else {
+                        writer.println("<check key=\"" + key.value + "\"" + (key.description != null ? " text=\"" + key.description + "\"" : "")
+                                + " disable_off=\"true\" />");
+                    }
+                }
+                break;
             case RADIO:
             case STRUCTURERADIO:
+                if (options != null) {
+                    for (ValueAndDescription v : options) {
+                        indent(writer, baseIndent);
+                        writer.println("<check key=\"" + v.value + "\"" + (v.description != null ? " text=\"" + v.description + "\"" : "")
+                                + " disable_off=\"true\" />");
+                    }
+                }
                 break;
             }
+        }
+
+        /**
+         * @param writer
+         * @param baseIndent
+         */
+        private void optionsComment(PrintWriter writer, int baseIndent) {
+            indent(writer, baseIndent);
+            writer.println("<!-- no values in fields.json, retrieved these from taginfo -->");
         }
 
         String fieldType2Attribute(FieldType fieldType) {
@@ -272,7 +282,12 @@ public class ID2JOSM {
             }
             if (fields != null) {
                 for (Field field : fields) {
-                    field.toJosm(writer);
+                    if (chunkMode) {
+                        indent(writer, 2);
+                        writer.println("<reference ref=\"" + fieldKeys.get(field) + "\" />");
+                    } else {
+                        field.toJosm(writer);
+                    }
                 }
             }
             indent(writer, 1);
@@ -282,7 +297,11 @@ public class ID2JOSM {
 
     static Map<String, Field> fields = new HashMap<>();
 
+    static Map<Field, String> fieldKeys = new HashMap<>();
+
     static List<Item> items = new ArrayList<>();
+
+    private static boolean chunkMode = false;
 
     /**
      * @param printWriter
@@ -309,6 +328,7 @@ public class ID2JOSM {
                             jsonName = reader.nextName();
                             Field current = new Field();
                             fields.put(jsonName, current);
+                            fieldKeys.put(current, jsonName);
                             reader.beginObject();
                             while (reader.hasNext()) {
                                 switch (reader.nextName()) {
@@ -506,13 +526,30 @@ public class ID2JOSM {
 
                 // print out
                 printWriter.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-                printWriter.println("<presets xmlns=\"http://josm.openstreetmap.de/tagging-preset-1.0\"" 
-                        + " shortdescription=\"iD presets\" description=\"\">");
+                printWriter
+                        .println("<presets xmlns=\"http://josm.openstreetmap.de/tagging-preset-1.0\"" + " shortdescription=\"iD presets\" description=\"\">");
+                if (chunkMode) {
+                    for (String fieldName : fields.keySet()) {
+                        Field field = fields.get(fieldName);
+                        if (field != null) {
+                            indent(printWriter, 1);
+                            printWriter.println("<chunk id=\"" + fieldName + "\">");
+                            try {
+                                field.toJosm(printWriter);
+                            } catch (Exception ex) {
+                                System.out.println("Exception for " + fieldName);
+                                ex.printStackTrace();
+                            }
+                            indent(printWriter, 1);
+                            printWriter.println("</chunk>");
+                        }
+                    }
+                }
                 for (Item item : items) {
                     try {
                         item.toJosm(printWriter);
                     } catch (Exception ex) {
-                        System.out.println("Exception in " + item.name);
+                        System.out.println("Exception for " + item.name);
                         ex.printStackTrace();
                     }
                 }
@@ -537,6 +574,135 @@ public class ID2JOSM {
             } catch (IOException ioex) {
             }
         }
+    }
+
+    public static List<ValueAndDescription> getOptionsFromTagInfo(String key) {
+        // "https://taginfo.openstreetmap.org/api/4/key/values?key=aerialway&page=1&rp=10&sortname=count_all&sortorder=desc"
+        List<ValueAndDescription> result = new ArrayList<>();
+        JsonReader reader = null;
+        InputStream is = null;
+        try {
+            URL url = new URL("https://taginfo.openstreetmap.org/api/4/key/values?key=" + key + "&page=1&rp=20&sortname=count_all&sortorder=desc");
+            is = openConnection(url);
+            reader = new JsonReader(new InputStreamReader(is, "UTF-8"));
+            try {
+                reader.beginObject();
+                while (reader.hasNext()) {
+                    String jsonName = reader.nextName();
+                    if ("data".equals(jsonName)) {
+                        reader.beginArray();
+                        while (reader.hasNext()) {
+                            reader.beginObject();
+                            while (reader.hasNext()) {
+                                jsonName = reader.nextName();
+                                if ("value".equals(jsonName)) {
+                                    ValueAndDescription v = new ValueAndDescription();
+                                    v.value = reader.nextString();
+                                    result.add(v);
+                                } else {
+                                    reader.skipValue();
+                                }
+                            }
+                            reader.endObject();
+                        }
+                        reader.endArray();
+                    } else {
+                        reader.skipValue();
+                    }
+                }
+                reader.endObject();
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+            }
+        } catch (MalformedURLException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } finally {
+            try {
+                if (reader != null) {
+                    reader.close();
+                }
+            } catch (IOException ioex) {
+            }
+            try {
+                if (is != null) {
+                    is.close();
+                }
+            } catch (IOException ioex) {
+            }
+        }
+        return result;
+    }
+
+    public static List<ValueAndDescription> getKeysFromTagInfo(String partialKey) {
+        // "https://taginfo.openstreetmap.org/api/4/keys/all?query=communication:&page=1&rp=10&filter=in_wiki&sortname=key&sortorder=asc"
+        List<ValueAndDescription> result = new ArrayList<>();
+        JsonReader reader = null;
+        InputStream is = null;
+        try {
+            URL url = new URL(
+                    "https://taginfo.openstreetmap.org/api/4/keys/all?query=" + partialKey + "&sortname=count_all&sortorder=desc");
+            is = openConnection(url);
+            reader = new JsonReader(new InputStreamReader(is, "UTF-8"));
+            try {
+                reader.beginObject();
+                while (reader.hasNext()) {
+                    String jsonName = reader.nextName();
+                    if ("data".equals(jsonName)) {
+                        reader.beginArray();
+                        while (reader.hasNext()) {
+                            reader.beginObject();
+                            while (reader.hasNext()) {
+                                jsonName = reader.nextName();
+                                if ("key".equals(jsonName)) {
+                                    String key = reader.nextString();
+                                    if (key.startsWith(partialKey)) {
+                                        String value = key.replaceFirst(partialKey, "");
+                                        if (!value.contains(":")) {
+                                            ValueAndDescription v = new ValueAndDescription();
+                                            v.value = value;
+                                            result.add(v);
+                                        }
+                                    }
+                                } else {
+                                    reader.skipValue();
+                                }
+                            }
+                            reader.endObject();
+                        }
+                        reader.endArray();
+                    } else {
+                        reader.skipValue();
+                    }
+                }
+                reader.endObject();
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+            }
+        } catch (MalformedURLException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } finally {
+            try {
+                if (reader != null) {
+                    reader.close();
+                }
+            } catch (IOException ioex) {
+            }
+            try {
+                if (is != null) {
+                    is.close();
+                }
+            } catch (IOException ioex) {
+            }
+        }
+        return result;
     }
 
     static void indent(PrintWriter writer, int times) {
@@ -600,8 +766,7 @@ public class ID2JOSM {
                     String output = line.getOptionValue("output");
                     os = new FileOutputStream(output);
                 }
-                if (line.hasOption("c")) {
-                }
+                chunkMode = line.hasOption("c");
             } catch (ParseException exp) {
                 HelpFormatter formatter = new HelpFormatter();
                 formatter.printHelp("ID2JOSM", options);
