@@ -107,8 +107,9 @@ public class ID2JOSM {
                             options = getOptionsFromTagInfo(key.value);
                         }
                         indent(writer, baseIndent);
+                        String labelText = key.description != null ? key.description : (label != null && keys.size() == 1 ? label : null);
                         writer.println("<" + (FieldType.SEMICOMBO.equals(fieldType) ? "multiselect" : "combo") + " key=\"" + StringEscapeUtils.escapeXml11(key.value) + "\""
-                                + (key.description != null ? " text=\"" + StringEscapeUtils.escapeXml11(key.description) + "\"" : ""));
+                                + (labelText != null ? " text=\"" + StringEscapeUtils.escapeXml11(labelText) + "\"" : ""));
                         indent(writer, baseIndent + 1);
                         writer.print("values=\"");
                         for (int i = 0; i < options.size(); i++) {
