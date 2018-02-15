@@ -17,7 +17,7 @@ apply plugin: 'maven-publish'
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
-version = '0.2.0'
+version = '0.2.1'
 def libName = "preset-utils"
 
 // In this section you declare where to find the dependencies of your project
@@ -36,6 +36,7 @@ ext {
 dependencies {
     // This dependency is exported to consumers, that is to say found on their compile classpath.
     compile 'commons-cli:commons-cli:1.4'
+    compile 'org.apache.commons:commons-lang3:3.7'
     compile 'org.jetbrains:annotations:15.0'
     compile "com.google.code.gson:gson:2.8.1"
 
@@ -53,7 +54,7 @@ task getSynonyms(type: JavaExec) {
 task convertIdPresets(type: JavaExec) {
     main = "ch.poole.osm.presetutils.ID2JOSM"
     classpath = sourceSets.main.runtimeClasspath
-    args('-c')
+    args('-c', '-o', 'build/tmp/id_preset.xml')
 }
 
 task sourcesJar(type: Jar) {

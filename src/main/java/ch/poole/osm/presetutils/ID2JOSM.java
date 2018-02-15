@@ -25,6 +25,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.jetbrains.annotations.NotNull;
 
 import com.google.gson.stream.JsonReader;
@@ -87,9 +88,9 @@ public class ID2JOSM {
                     for (ValueAndDescription key : keys) {
                         indent(writer, baseIndent);
                         if (keys.size() == 1 && label != null) {
-                            writer.println("<text key=\"" + key.value + "\" text=\"" + label + "\"" + fieldType2Attribute(fieldType) + " />");
+                            writer.println("<text key=\"" + StringEscapeUtils.escapeXml11(key.value) + "\" text=\"" + StringEscapeUtils.escapeXml11(label) + "\"" + fieldType2Attribute(fieldType) + " />");
                         } else {
-                            writer.println("<text key=\"" + key.value + "\"" + (key.description != null ? " text=\"" + key.description + "\"" : "")
+                            writer.println("<text key=\"" + StringEscapeUtils.escapeXml11(key.value) + "\"" + (key.description != null ? " text=\"" + StringEscapeUtils.escapeXml11(key.description) + "\"" : "")
                                     + fieldType2Attribute(fieldType) + " />");
                         }
                     }
@@ -106,12 +107,12 @@ public class ID2JOSM {
                             options = getOptionsFromTagInfo(key.value);
                         }
                         indent(writer, baseIndent);
-                        writer.println("<" + (FieldType.SEMICOMBO.equals(fieldType) ? "multiselect" : "combo") + " key=\"" + key.value + "\""
-                                + (key.description != null ? " text=\"" + key.description + "\"" : ""));
+                        writer.println("<" + (FieldType.SEMICOMBO.equals(fieldType) ? "multiselect" : "combo") + " key=\"" + StringEscapeUtils.escapeXml11(key.value) + "\""
+                                + (key.description != null ? " text=\"" + StringEscapeUtils.escapeXml11(key.description) + "\"" : ""));
                         indent(writer, baseIndent + 1);
                         writer.print("values=\"");
                         for (int i = 0; i < options.size(); i++) {
-                            writer.print(options.get(i).value);
+                            writer.print(StringEscapeUtils.escapeXml11(options.get(i).value));
                             if (i < options.size() - 1) {
                                 writer.print(",");
                             }
@@ -122,9 +123,9 @@ public class ID2JOSM {
                         for (int i = 0; i < options.size(); i++) {
                             ValueAndDescription v = options.get(i);
                             if (v.description != null && !"".equals(v.description)) {
-                                writer.print(v.description);
+                                writer.print(StringEscapeUtils.escapeXml11(v.description));
                             } else {
-                                writer.print(v.value);
+                                writer.print(StringEscapeUtils.escapeXml11(v.value));
                             }
                             if (i < options.size() - 1) {
                                 writer.print(",");
@@ -143,7 +144,7 @@ public class ID2JOSM {
                     }
                     for (ValueAndDescription v : options) {
                         indent(writer, baseIndent);
-                        writer.println("<check key=\"" + key.value + v.value + "\"" + (v.description != null ? " text=\"" + v.description + "\"" : "")
+                        writer.println("<check key=\"" + StringEscapeUtils.escapeXml11(key.value + v.value) + "\"" + (v.description != null ? " text=\"" + StringEscapeUtils.escapeXml11(v.description) + "\"" : "")
                                 + " disable_off=\"true\" />");
                     }
 
@@ -154,9 +155,9 @@ public class ID2JOSM {
                     ValueAndDescription key = keys.get(0);
                     indent(writer, baseIndent);
                     if (label != null) {
-                        writer.println("<combo key=\"" + key.value + "\" text=\"" + label + "\"" + " values=\"yes,no\" />");
+                        writer.println("<combo key=\"" + StringEscapeUtils.escapeXml11(key.value) + "\" text=\"" + StringEscapeUtils.escapeXml11(label) + "\"" + " values=\"yes,no\" />");
                     } else {
-                        writer.println("<combo key=\"" + key.value + "\"" + (key.description != null ? " text=\"" + key.description + "\"" : "")
+                        writer.println("<combo key=\"" + StringEscapeUtils.escapeXml11(key.value) + "\"" + (key.description != null ? " text=\"" + StringEscapeUtils.escapeXml11(key.description) + "\"" : "")
                                 + " values=\"yes,no\" />");
                     }
                 }
@@ -167,9 +168,9 @@ public class ID2JOSM {
                     ValueAndDescription key = keys.get(0);
                     indent(writer, baseIndent);
                     if (label != null) {
-                        writer.println("<check key=\"" + key.value + "\" text=\"" + label + "\" disable_off=\"true\" />");
+                        writer.println("<check key=\"" + StringEscapeUtils.escapeXml11(key.value) + "\" text=\"" + StringEscapeUtils.escapeXml11(label) + "\" disable_off=\"true\" />");
                     } else {
-                        writer.println("<check key=\"" + key.value + "\"" + (key.description != null ? " text=\"" + key.description + "\"" : "")
+                        writer.println("<check key=\"" + StringEscapeUtils.escapeXml11(key.value) + "\"" + (key.description != null ? " text=\"" + StringEscapeUtils.escapeXml11(key.description) + "\"" : "")
                                 + " disable_off=\"true\" />");
                     }
                 }
@@ -179,7 +180,7 @@ public class ID2JOSM {
                 if (options != null) {
                     for (ValueAndDescription v : options) {
                         indent(writer, baseIndent);
-                        writer.println("<check key=\"" + v.value + "\"" + (v.description != null ? " text=\"" + v.description + "\"" : "")
+                        writer.println("<check key=\"" + StringEscapeUtils.escapeXml11(v.value) + "\"" + (v.description != null ? " text=\"" + StringEscapeUtils.escapeXml11(v.description) + "\"" : "")
                                 + " disable_off=\"true\" />");
                     }
                 }
@@ -273,9 +274,9 @@ public class ID2JOSM {
                     if (tag.key != null && !"".equals(tag.key) && !tag.key.contains("*")) {
                         indent(writer, 2);
                         if (tag.value != null && !"".equals(tag.value) && !tag.value.contains("*")) {
-                            writer.println("<key key=\"" + tag.key + "\" value=\"" + tag.value + "\" />");
+                            writer.println("<key key=\"" + StringEscapeUtils.escapeXml11(tag.key) + "\" value=\"" + StringEscapeUtils.escapeXml11(tag.value) + "\" />");
                         } else { // generate a text field
-                            writer.println("<text key=\"" + tag.key + "\" />");
+                            writer.println("<text key=\"" + StringEscapeUtils.escapeXml11(tag.key) + "\" />");
                         }
                     }
                 }
@@ -284,7 +285,7 @@ public class ID2JOSM {
                 for (Field field : fields) {
                     if (chunkMode) {
                         indent(writer, 2);
-                        writer.println("<reference ref=\"" + fieldKeys.get(field) + "\" />");
+                        writer.println("<reference ref=\"" + StringEscapeUtils.escapeXml11(fieldKeys.get(field)) + "\" />");
                     } else {
                         field.toJosm(writer);
                     }
