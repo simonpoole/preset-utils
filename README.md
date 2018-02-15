@@ -41,3 +41,14 @@ Retrieve synonym values from the iD editor repository and output a json object c
      -l,--lang <arg>       language code to retrieve the synonyms for, default: en
      -o,--output <arg>     output json file, default: standard out
      -x,--exclude <args>   skip any entries that contain the terms (for example "military")
+     
+## ID2JOSM
+
+Generate a JOSM preset from the iD preset configuration, retrieving some values from taginfo similar to what iD does.
+
+Note this does not include any icons from the preset and is mainly useful for statistical and comparison purposes.
+
+### Usage
+
+     -o,--output <arg>     output xml file, default: standard out
+     -c,--chunk            if set iD field definitions will be converted to JOSM preset "chunks", if not set the fields are expanded inline
