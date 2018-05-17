@@ -38,145 +38,143 @@ import com.google.gson.stream.JsonReader;
  *
  */
 public class Synonyms {
-    
+
     static final String DEBUG_TAG = "Synonyms";
 
     private static final int TIMEOUT = 20;
 
     private static ArrayList<String> excludes;
 
+    /**
+     * @param printWriter PrintWriter for the file to write to
+     */
+    static void getSynonyms(String lang, PrintWriter printWriter) {
+        // Log.d("DiscardedTags","Parsing configuration file");
 
-	/**
-	 * @param printWriter PrintWriter for the file to write to
-	 */
-    static void getSynonyms(String lang, PrintWriter printWriter) {	
-		// Log.d("DiscardedTags","Parsing configuration file");
+        // https://raw.githubusercontent.com/openstreetmap/iD/master/dist/locales/de.json
+        InputStream is = null;
+        JsonReader reader = null;
+        try {
+            URL url = new URL("https://raw.githubusercontent.com/openstreetmap/iD/master/dist/locales/" + lang + ".json");
+            is = openConnection(url);
+            reader = new JsonReader(new InputStreamReader(is, "UTF-8"));
+            try {
+                reader.beginObject();
+                if (reader.hasNext()) {
+                    String jsonName = reader.nextName();
+                    reader.beginObject();
 
-		// https://raw.githubusercontent.com/openstreetmap/iD/master/dist/locales/de.json
-		InputStream is = null;
-		JsonReader reader = null;
-		try {
-		    URL url = new URL("https://raw.githubusercontent.com/openstreetmap/iD/master/dist/locales/"+lang+".json");
-			is = openConnection(url);
-			reader = new JsonReader(new InputStreamReader(is, "UTF-8"));
-			try {
-			    reader.beginObject();
-			    if (reader.hasNext()) {
-			        String jsonName = reader.nextName();
-			        reader.beginObject();
-			        
-			            while (reader.hasNext()) {
-			                jsonName = reader.nextName();
-			                if ("presets".equals(jsonName)) {
-			                    reader.beginObject();
-			                    printWriter.println("{");
-			                    while (reader.hasNext()) {
-			                        if ("presets".equals(reader.nextName())) {
-			                            boolean first = true;
-			                            reader.beginObject();
-			                            while (reader.hasNext()) {
-			                                String name = null;
-			                                String terms = null;
-			                                String presetName = reader.nextName();
-                                            if (excludes != null) { // skip anything that is in excludes
-                                                String[] parts = presetName.split("/");
-                                                if (parts.length > 0) {
-                                                    boolean found = false;
-                                                    for (String part:parts) {
-                                                        if (excludes.contains(part)) {
-                                                            reader.skipValue();
-                                                            found = true;
-                                                            break;
-                                                        }
+                    while (reader.hasNext()) {
+                        jsonName = reader.nextName();
+                        if ("presets".equals(jsonName)) {
+                            reader.beginObject();
+                            printWriter.println("{");
+                            while (reader.hasNext()) {
+                                if ("presets".equals(reader.nextName())) {
+                                    boolean first = true;
+                                    reader.beginObject();
+                                    while (reader.hasNext()) {
+                                        String name = null;
+                                        String terms = null;
+                                        String presetName = reader.nextName();
+                                        if (excludes != null) { // skip anything that is in excludes
+                                            String[] parts = presetName.split("/");
+                                            if (parts.length > 0) {
+                                                boolean found = false;
+                                                for (String part : parts) {
+                                                    if (excludes.contains(part)) {
+                                                        reader.skipValue();
+                                                        found = true;
+                                                        break;
                                                     }
-                                                    if (found) {
-                                                        continue;
-                                                    }
+                                                }
+                                                if (found) {
+                                                    continue;
                                                 }
                                             }
-			                                reader.beginObject();
-			                                jsonName = reader.nextName();
-			                                if ("name".equals(jsonName)) { // FIXME make order independent
-			                                    name = reader.nextString();
-			                                } else if ("terms".equals(jsonName)) { // in some cases name seems to be missing
+                                        }
+                                        reader.beginObject();
+                                        jsonName = reader.nextName();
+                                        if ("name".equals(jsonName)) { // FIXME make order independent
+                                            name = reader.nextString();
+                                        } else if ("terms".equals(jsonName)) { // in some cases name seems to be missing
+                                            terms = reader.nextString();
+                                        }
+                                        if (reader.hasNext()) {
+                                            jsonName = reader.nextName();
+                                            if ("terms".equals(jsonName)) {
                                                 terms = reader.nextString();
-                                            } 
-			                                if (reader.hasNext()) {
-			                                    jsonName = reader.nextName();
-			                                    if ("terms".equals(jsonName)) {
-			                                        terms = reader.nextString();
-			                                    } 
-			                                }
-			                                reader.endObject();
-			                                
-			                                Set<String> set = new HashSet<>();
-			                                if (terms != null && !"".equals(terms) && !terms.startsWith("<")) {
-			                                    String[] termsArray = terms.split("\\s*,\\s*");
-			                                    set.addAll(Arrays.asList(termsArray));
-			                                }
-			                                if (name != null && !"".equals(name)) {
-			                                    set.add(name);
-			                                }
-			                               if (set.size() > 0) {   
-			                                    // output
-			                                    if (!first) {
-                                                    printWriter.write(",\n");
+                                            }
+                                        }
+                                        reader.endObject();
+
+                                        Set<String> set = new HashSet<>();
+                                        if (terms != null && !"".equals(terms) && !terms.startsWith("<")) {
+                                            String[] termsArray = terms.split("\\s*,\\s*");
+                                            set.addAll(Arrays.asList(termsArray));
+                                        }
+                                        if (name != null && !"".equals(name)) {
+                                            set.add(name);
+                                        }
+                                        if (set.size() > 0) {
+                                            // output
+                                            if (!first) {
+                                                printWriter.write(",\n");
+                                            }
+                                            printWriter.write("\"" + presetName + "\":[\n");
+                                            Iterator<String> iter = set.iterator();
+                                            while (iter.hasNext()) {
+                                                printWriter.write("\"" + iter.next() + "\"");
+                                                if (iter.hasNext()) {
+                                                    printWriter.write(",");
                                                 }
-			                                    printWriter.write("\"" + presetName + "\":[\n");
-			                                    Iterator<String> iter = set.iterator();
-			                                    while (iter.hasNext()) {
-			                                        printWriter.write("\"" + iter.next() + "\"");
-			                                        if (iter.hasNext()) {
-			                                            printWriter.write(",");
-			                                        }
-			                                        printWriter.write("\n");
-			                                    }
-			                                    printWriter.write("]");  
-			                                    first = false;
-			                                }
-			                            }
-			                            reader.endObject();
-			                        } else {
-			                            reader.skipValue();
-			                        }
-			                    }
-			                    printWriter.println("\n}");
-			                    printWriter.flush();
-			                    reader.endObject();
-			                } else {
-			                    reader.skipValue();
-			                }
-			            
-			        }
-			        reader.endObject();
-			    }
-			    reader.endObject();
-			} catch (IOException e) {
-			    System.out.println(e.getMessage());
-			} 
-		} catch (IOException e) {
-		    System.out.println(e.getMessage());
-		}
-		finally {
-		    try {
-		        if (reader != null) {
-		            reader.close();
-		        }
-		    } catch(IOException ioex) {
-		    }
-	        try {
-	            if (is != null) {
-	                is.close();
-	            }
-	        } catch(IOException ioex) {
-	        }
-		}
-	}
-	
-	/**
+                                                printWriter.write("\n");
+                                            }
+                                            printWriter.write("]");
+                                            first = false;
+                                        }
+                                    }
+                                    reader.endObject();
+                                } else {
+                                    reader.skipValue();
+                                }
+                            }
+                            printWriter.println("\n}");
+                            printWriter.flush();
+                            reader.endObject();
+                        } else {
+                            reader.skipValue();
+                        }
+
+                    }
+                    reader.endObject();
+                }
+                reader.endObject();
+            } catch (IOException e) {
+                System.out.println(e.getMessage());
+            }
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        } finally {
+            try {
+                if (reader != null) {
+                    reader.close();
+                }
+            } catch (IOException ioex) {
+            }
+            try {
+                if (is != null) {
+                    is.close();
+                }
+            } catch (IOException ioex) {
+            }
+        }
+    }
+
+    /**
      * Given an URL open the connection and return the InputStream
      * 
-     * @param url       the URL
+     * @param url the URL
      * @return the InputStream
      * @throws IOException
      */
@@ -184,16 +182,16 @@ public class Synonyms {
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
         boolean isServerGzipEnabled;
 
-        // Log.d(DEBUG_TAG, "get input stream for  " + url.toString());
-        
-        //--Start: header not yet send
-        con.setReadTimeout(TIMEOUT*1000);
-        con.setConnectTimeout(TIMEOUT*1000);
+        // Log.d(DEBUG_TAG, "get input stream for " + url.toString());
+
+        // --Start: header not yet send
+        con.setReadTimeout(TIMEOUT * 1000);
+        con.setConnectTimeout(TIMEOUT * 1000);
         con.setRequestProperty("Accept-Encoding", "gzip");
         con.setRequestProperty("User-Agent", Synonyms.class.getCanonicalName());
         con.setInstanceFollowRedirects(true);
-        
-        //--Start: got response header
+
+        // --Start: got response header
         isServerGzipEnabled = "gzip".equals(con.getHeaderField("Content-encoding"));
 
         if (con.getResponseCode() != HttpURLConnection.HTTP_OK) {
@@ -206,29 +204,17 @@ public class Synonyms {
             return con.getInputStream();
         }
     }
-    
+
     public static void main(String[] args) {
         OutputStream os = System.out;
         String lang = "de";
         // arguments
-        Option inputFile = Option.builder("l")
-                .longOpt("lang")
-                .hasArg()
-                .desc("language to retrieve synonyms for")
-                .build();
+        Option inputFile = Option.builder("l").longOpt("lang").hasArg().desc("language to retrieve synonyms for").build();
 
-        Option outputFile = Option.builder("o")
-                .longOpt("output")
-                .hasArg()
-                .desc("output .html file, default: standard out")
-                .build();
-        
-        Option exclude = Option.builder("x")
-                .longOpt("exclude")
-                .hasArgs()
-                .desc("one or more terms that should be excluded")
-                .build();
-        
+        Option outputFile = Option.builder("o").longOpt("output").hasArg().desc("output .html file, default: standard out").build();
+
+        Option exclude = Option.builder("x").longOpt("exclude").hasArgs().desc("one or more terms that should be excluded").build();
+
         Options options = new Options();
 
         options.addOption(inputFile);
@@ -239,37 +225,36 @@ public class Synonyms {
         try {
             try {
                 // parse the command line arguments
-                CommandLine line = parser.parse( options, args );
-                if (line.hasOption( "l")) {
+                CommandLine line = parser.parse(options, args);
+                if (line.hasOption("l")) {
                     lang = line.getOptionValue("lang");
                 }
-                if (line.hasOption( "o")) {
+                if (line.hasOption("o")) {
                     String output = line.getOptionValue("output");
                     os = new FileOutputStream(output);
                 }
-                if (line.hasOption( "x")) {
+                if (line.hasOption("x")) {
                     String[] tempExcludes = line.getOptionValues("exclude");
                     if (tempExcludes != null) {
                         excludes = new ArrayList<>(Arrays.asList(tempExcludes));
                     }
                 }
-            } catch(ParseException exp) {
+            } catch (ParseException exp) {
                 HelpFormatter formatter = new HelpFormatter();
-                formatter.printHelp( "Synonyms", options );
+                formatter.printHelp("Synonyms", options);
                 return;
             } catch (FileNotFoundException e) {
                 System.err.println("File not found: " + e.getMessage());
                 return;
             }
-            getSynonyms(lang, new PrintWriter(new OutputStreamWriter(os,StandardCharsets.UTF_8)));
+            getSynonyms(lang, new PrintWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8)));
         } finally {
             try {
                 os.close();
             } catch (IOException e) {
-                //NOSONAR
+                // NOSONAR
             }
         }
-        
+
     }
 }
-
