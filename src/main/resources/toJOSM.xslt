@@ -11,6 +11,8 @@
     <xsl:template match="m:key/@values_context" />
     <xsl:template match="m:key/@text" />
     <xsl:template match="m:presets/@object_keys" />
+    <xsl:template match="m:checkgroup/@name" />
+    <xsl:template match="m:checkgroup/@radiogroup" />
     <!--identity template copies everything forward by default-->
     <xsl:template match="@*|node()">
         <xsl:copy>
