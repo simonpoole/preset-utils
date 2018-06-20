@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.cli.CommandLine;
@@ -88,9 +89,11 @@ public class ID2JOSM {
                     for (ValueAndDescription key : keys) {
                         indent(writer, baseIndent);
                         if (keys.size() == 1 && label != null) {
-                            writer.println("<text key=\"" + StringEscapeUtils.escapeXml11(key.value) + "\" text=\"" + StringEscapeUtils.escapeXml11(label) + "\"" + fieldType2Attribute(fieldType) + " />");
+                            writer.println("<text key=\"" + StringEscapeUtils.escapeXml11(key.value) + "\" text=\"" + StringEscapeUtils.escapeXml11(label)
+                                    + "\"" + fieldType2Attribute(fieldType) + " />");
                         } else {
-                            writer.println("<text key=\"" + StringEscapeUtils.escapeXml11(key.value) + "\"" + (key.description != null ? " text=\"" + StringEscapeUtils.escapeXml11(key.description) + "\"" : "")
+                            writer.println("<text key=\"" + StringEscapeUtils.escapeXml11(key.value) + "\""
+                                    + (key.description != null ? " text=\"" + StringEscapeUtils.escapeXml11(key.description) + "\"" : "")
                                     + fieldType2Attribute(fieldType) + " />");
                         }
                     }
@@ -104,12 +107,13 @@ public class ID2JOSM {
                     for (ValueAndDescription key : keys) {
                         if (options == null) {
                             optionsComment(writer, baseIndent);
-                            options = getOptionsFromTagInfo(key.value);
+                            options = getOptionsFromTagInfo(key.value, 0);
                         }
                         indent(writer, baseIndent);
                         String labelText = key.description != null ? key.description : (label != null && keys.size() == 1 ? label : null);
-                        writer.println("<" + (FieldType.SEMICOMBO.equals(fieldType) ? "multiselect" : "combo") + " key=\"" + StringEscapeUtils.escapeXml11(key.value) + "\""
-                                + (labelText != null ? " text=\"" + StringEscapeUtils.escapeXml11(labelText) + "\"" : ""));
+                        writer.println(
+                                "<" + (FieldType.SEMICOMBO.equals(fieldType) ? "multiselect" : "combo") + " key=\"" + StringEscapeUtils.escapeXml11(key.value)
+                                        + "\"" + (labelText != null ? " text=\"" + StringEscapeUtils.escapeXml11(labelText) + "\"" : ""));
                         indent(writer, baseIndent + 1);
                         writer.print("values=\"");
                         for (int i = 0; i < options.size(); i++) {
@@ -145,8 +149,8 @@ public class ID2JOSM {
                     }
                     for (ValueAndDescription v : options) {
                         indent(writer, baseIndent);
-                        writer.println("<check key=\"" + StringEscapeUtils.escapeXml11(key.value + v.value) + "\"" + (v.description != null ? " text=\"" + StringEscapeUtils.escapeXml11(v.description) + "\"" : "")
-                                + " disable_off=\"true\" />");
+                        writer.println("<check key=\"" + StringEscapeUtils.escapeXml11(key.value + v.value) + "\""
+                                + (v.description != null ? " text=\"" + StringEscapeUtils.escapeXml11(v.description) + "\"" : "") + " disable_off=\"true\" />");
                     }
 
                 }
@@ -156,9 +160,11 @@ public class ID2JOSM {
                     ValueAndDescription key = keys.get(0);
                     indent(writer, baseIndent);
                     if (label != null) {
-                        writer.println("<combo key=\"" + StringEscapeUtils.escapeXml11(key.value) + "\" text=\"" + StringEscapeUtils.escapeXml11(label) + "\"" + " values=\"yes,no\" />");
+                        writer.println("<combo key=\"" + StringEscapeUtils.escapeXml11(key.value) + "\" text=\"" + StringEscapeUtils.escapeXml11(label) + "\""
+                                + " values=\"yes,no\" />");
                     } else {
-                        writer.println("<combo key=\"" + StringEscapeUtils.escapeXml11(key.value) + "\"" + (key.description != null ? " text=\"" + StringEscapeUtils.escapeXml11(key.description) + "\"" : "")
+                        writer.println("<combo key=\"" + StringEscapeUtils.escapeXml11(key.value) + "\""
+                                + (key.description != null ? " text=\"" + StringEscapeUtils.escapeXml11(key.description) + "\"" : "")
                                 + " values=\"yes,no\" />");
                     }
                 }
@@ -169,9 +175,11 @@ public class ID2JOSM {
                     ValueAndDescription key = keys.get(0);
                     indent(writer, baseIndent);
                     if (label != null) {
-                        writer.println("<check key=\"" + StringEscapeUtils.escapeXml11(key.value) + "\" text=\"" + StringEscapeUtils.escapeXml11(label) + "\" disable_off=\"true\" />");
+                        writer.println("<check key=\"" + StringEscapeUtils.escapeXml11(key.value) + "\" text=\"" + StringEscapeUtils.escapeXml11(label)
+                                + "\" disable_off=\"true\" />");
                     } else {
-                        writer.println("<check key=\"" + StringEscapeUtils.escapeXml11(key.value) + "\"" + (key.description != null ? " text=\"" + StringEscapeUtils.escapeXml11(key.description) + "\"" : "")
+                        writer.println("<check key=\"" + StringEscapeUtils.escapeXml11(key.value) + "\""
+                                + (key.description != null ? " text=\"" + StringEscapeUtils.escapeXml11(key.description) + "\"" : "")
                                 + " disable_off=\"true\" />");
                     }
                 }
@@ -181,8 +189,8 @@ public class ID2JOSM {
                 if (options != null) {
                     for (ValueAndDescription v : options) {
                         indent(writer, baseIndent);
-                        writer.println("<check key=\"" + StringEscapeUtils.escapeXml11(v.value) + "\"" + (v.description != null ? " text=\"" + StringEscapeUtils.escapeXml11(v.description) + "\"" : "")
-                                + " disable_off=\"true\" />");
+                        writer.println("<check key=\"" + StringEscapeUtils.escapeXml11(v.value) + "\""
+                                + (v.description != null ? " text=\"" + StringEscapeUtils.escapeXml11(v.description) + "\"" : "") + " disable_off=\"true\" />");
                     }
                 }
                 break;
@@ -275,7 +283,8 @@ public class ID2JOSM {
                     if (tag.key != null && !"".equals(tag.key) && !tag.key.contains("*")) {
                         indent(writer, 2);
                         if (tag.value != null && !"".equals(tag.value) && !tag.value.contains("*")) {
-                            writer.println("<key key=\"" + StringEscapeUtils.escapeXml11(tag.key) + "\" value=\"" + StringEscapeUtils.escapeXml11(tag.value) + "\" />");
+                            writer.println("<key key=\"" + StringEscapeUtils.escapeXml11(tag.key) + "\" value=\"" + StringEscapeUtils.escapeXml11(tag.value)
+                                    + "\" />");
                         } else { // generate a text field
                             writer.println("<text key=\"" + StringEscapeUtils.escapeXml11(tag.key) + "\" />");
                         }
@@ -578,8 +587,12 @@ public class ID2JOSM {
         }
     }
 
-    public static List<ValueAndDescription> getOptionsFromTagInfo(String key) {
+    static final Pattern canHaveUppercase = Pattern.compile("network|taxon|genus|species|brand|grape_variety|rating|:output|_hours|_times");
+    static final Pattern hasPunctuation   = Pattern.compile("[;,]");
+
+    public static List<ValueAndDescription> getOptionsFromTagInfo(String key, int minCount) {
         // "https://taginfo.openstreetmap.org/api/4/key/values?key=aerialway&page=1&rp=10&sortname=count_all&sortorder=desc"
+        boolean allowUppercase = canHaveUppercase.matcher(key).matches();
         List<ValueAndDescription> result = new ArrayList<>();
         JsonReader reader = null;
         InputStream is = null;
@@ -595,17 +608,32 @@ public class ID2JOSM {
                         reader.beginArray();
                         while (reader.hasNext()) {
                             reader.beginObject();
+                            String value = null;
+                            boolean inWiki = false;
+                            int count = 0;
                             while (reader.hasNext()) {
                                 jsonName = reader.nextName();
-                                if ("value".equals(jsonName)) {
-                                    ValueAndDescription v = new ValueAndDescription();
-                                    v.value = reader.nextString();
-                                    result.add(v);
-                                } else {
+                                switch (jsonName) {
+                                case "value":
+                                    value = reader.nextString();
+                                    break;
+                                case "in_wiki":
+                                    inWiki = reader.nextBoolean();
+                                    break;
+                                case "count":
+                                    count = reader.nextInt();
+                                    break;
+                                default:
                                     reader.skipValue();
                                 }
                             }
                             reader.endObject();
+                            if (value != null && (inWiki || count >= minCount) && (allowUppercase || value.equals(value.toLowerCase()))
+                                    && !hasPunctuation.matcher(value).matches()) {
+                                ValueAndDescription v = new ValueAndDescription();
+                                v.value = value;
+                                result.add(v);
+                            }
                         }
                         reader.endArray();
                     } else {
@@ -645,8 +673,7 @@ public class ID2JOSM {
         JsonReader reader = null;
         InputStream is = null;
         try {
-            URL url = new URL(
-                    "https://taginfo.openstreetmap.org/api/4/keys/all?query=" + partialKey + "&sortname=count_all&sortorder=desc");
+            URL url = new URL("https://taginfo.openstreetmap.org/api/4/keys/all?query=" + partialKey + "&sortname=count_all&sortorder=desc");
             is = openConnection(url);
             reader = new JsonReader(new InputStreamReader(is, "UTF-8"));
             try {
