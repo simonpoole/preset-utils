@@ -587,7 +587,8 @@ public class ID2JOSM {
         }
     }
 
-    static final Pattern canHaveUppercase = Pattern.compile("network|taxon|genus|species|brand|grape_variety|rating|:output|_hours|_times");
+    /** the following is hardwired in iD **/
+    static final Pattern canHaveUppercase = Pattern.compile("network|taxon|genus|species|brand|grape_variety|rating|:output|_hours|_times|royal_cypher");
     static final Pattern hasPunctuation   = Pattern.compile("[;,]");
 
     public static List<ValueAndDescription> getOptionsFromTagInfo(String key, int minCount) {
@@ -673,7 +674,7 @@ public class ID2JOSM {
         JsonReader reader = null;
         InputStream is = null;
         try {
-            URL url = new URL("https://taginfo.openstreetmap.org/api/4/keys/all?query=" + partialKey + "&sortname=count_all&sortorder=desc");
+            URL url = new URL("https://taginfo.openstreetmap.org/api/4/keys/all?query=" + partialKey + "&sortname=count_all&sortorder=desc&page=1&rp=25");
             is = openConnection(url);
             reader = new JsonReader(new InputStreamReader(is, "UTF-8"));
             try {
