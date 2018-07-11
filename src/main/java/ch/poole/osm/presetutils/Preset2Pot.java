@@ -309,7 +309,6 @@ public class Preset2Pot {
 	        }
 
 	        try {
-	            p.setInputFilename("master_preset.xml");
 	            p.parseXML(is);
 	            p.dump2Pot(new PrintWriter(os));
 	        } catch (FileNotFoundException e) {
