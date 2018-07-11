@@ -17,7 +17,7 @@ apply plugin: 'maven-publish'
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
-version = '0.3.1'
+version = '0.4.0'
 def libName = "preset-utils"
 
 // In this section you declare where to find the dependencies of your project
@@ -55,6 +55,14 @@ task convertIdPresets(type: JavaExec) {
     main = "ch.poole.osm.presetutils.ID2JOSM"
     classpath = sourceSets.main.runtimeClasspath
     args('-c', '-o', 'build/tmp/id_preset.xml')
+}
+
+task presetsStats(type: JavaExec) {
+    main = "ch.poole.osm.presetutils.PresetStats"
+    classpath = sourceSets.main.runtimeClasspath
+    args('-i', 'build/tmp/id_preset.xml')
+    // args('-i', 'build/tmp/defaultpresets.xml')
+    // args('-i', '/Users/simon/git/beautified-JOSM-preset/master_preset.xml')
 }
 
 task sourcesJar(type: Jar) {
