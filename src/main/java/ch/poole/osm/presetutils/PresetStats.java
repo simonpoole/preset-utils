@@ -45,21 +45,28 @@ import org.xml.sax.helpers.DefaultHandler;
 
 public class PresetStats {
 
+    private static final String TAGINFO = "taginfo";
+    private static final String INPUT = "input";
+    private static final String OUTPUT = "output";
     /**
      * An set of tags considered 'important'. These are typically tags that define real-world objects and not properties
      * of such.
      */
-    public static final Set<String> OBJECT_KEYS       = Collections.unmodifiableSet(new HashSet<>(
-            Arrays.asList("highway", "barrier", "waterway", "railway", "aeroway", "aerialway", "power", "man_made", "building", "leisure", "amenity", "office",
-                    "shop", "craft", "emergency", "tourism", "historic", "landuse", "military", "natural", "boundary", "place", "type", "entrance", "pipeline",
-                    "healthcare", "playground", "attraction", "public_transport", "traffic_sign", "traffic_sign:forward", "traffic_sign:backward", "golf")));
-    public static final Set<String> SECOND_LEVEL_KEYS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("vending")));
+    public static final Set<String> OBJECT_KEYS       = Collections
+            .unmodifiableSet(new HashSet<>(Arrays.asList("highway", "barrier", "waterway", "railway", "aeroway", "aerialway", "power", "man_made", "building",
+                    "building:part", "leisure", "amenity", "office", "shop", "craft", "emergency", "tourism", "historic", "landuse", "military", "natural",
+                    "boundary", "place", "type", "entrance", "pipeline", "healthcare", "playground", "attraction", "public_transport", "traffic_sign",
+                    "traffic_sign:forward", "traffic_sign:backward", "golf", "indoor", "geological", "cemetry", "geological", "landcover")));
+    public static final Set<String> SECOND_LEVEL_KEYS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("vending", "sport")));
 
     class ItemStats {
-        String tag;
-        String name;
-        int    keyCount   = 0;
-        int    valueCount = 0;
+        String                    tag        = null;
+        String                    name       = null;
+        int                       keyCount   = 0;
+        int                       valueCount = 0;
+        int                       count      = 0;
+        Map<String, List<String>> chunkTags  = null;
+        boolean                   isChunk    = false;
     }
 
     Map<String, ItemStats> items        = new HashMap<>();
@@ -69,41 +76,53 @@ public class PresetStats {
     MyHandler              handler;
 
     class MyHandler extends DefaultHandler {
-        private static final String GROUP         = "group";
-        private static final String ITEM          = "item";
-        private static final String NAME          = "name";
-        private static final String CHUNK         = "chunk";
-        private static final String ID            = "id";
-        private static final String SEPARATOR     = "separator";
-        private static final String LABEL         = "label";
-        private static final String OPTIONAL      = "optional";
-        private static final String TEXT          = "text";
-        private static final String LINK          = "link";
-        private static final String CHECK         = "check";
-        private static final String COMBO         = "combo";
-        private static final String DELIMITER2    = "delimiter";
-        private static final String VALUES        = "values";
-        private static final String KEY           = "key";
-        private static final String MULTISELECT   = "multiselect";
-        private static final String ROLE          = "role";
-        private static final String REFERENCE     = "reference";
-        private static final String REF           = "ref";
-        private static final String LIST_ENTRY    = "list_entry";
-        private static final String VALUE         = "value";
-        ItemStats                   current       = null;
-        boolean                     keySeen       = false;
-        Map<String, ItemStats>      expandedItems = null;
-        String                      tagKey        = null;
-        String                      tagValue      = null;
-        Map<String, ItemStats>      chunks        = new HashMap<>();
+        private static final String GROUP              = "group";
+        private static final String ITEM               = "item";
+        private static final String NAME               = "name";
+        private static final String CHUNK              = "chunk";
+        private static final String ID                 = "id";
+        private static final String SEPARATOR          = "separator";
+        private static final String LABEL              = "label";
+        private static final String OPTIONAL           = "optional";
+        private static final String TEXT               = "text";
+        private static final String LINK               = "link";
+        private static final String CHECK              = "check";
+        private static final String COMBO              = "combo";
+        private static final String DELIMITER          = "delimiter";
+        private static final String VALUES             = "values";
+        private static final String KEY                = "key";
+        private static final String MULTISELECT        = "multiselect";
+        private static final String ROLE               = "role";
+        private static final String REFERENCE          = "reference";
+        private static final String REF                = "ref";
+        private static final String LIST_ENTRY         = "list_entry";
+        private static final String VALUE              = "value";
+        ItemStats                   current            = null;
+        boolean                     keySeen            = false;
+        boolean                     secondLevelKeySeen = false;
+        Map<String, ItemStats>      expandedItems      = null;
+        String                      tagKey             = null;
+        String                      tagValue           = null;
+        Map<String, ItemStats>      chunks             = new HashMap<>();
 
-        String comboKey;
+        String  comboKey;
+        boolean inOptional  = false;
+        boolean expandCombo = false;
+
+        final boolean useTagInfo;
+
+        public MyHandler(boolean useTagInfo) {
+            this.useTagInfo = useTagInfo;
+        }
 
         /**
          * ${@inheritDoc}.
          */
         @Override
         public void startElement(String uri, String localName, String qName, Attributes attr) throws SAXException {
+            if (inOptional) {
+                return;
+            }
             if (GROUP.equals(qName)) {
                 String group = attr.getValue(NAME);
             } else if (ITEM.equals(qName)) {
@@ -111,14 +130,18 @@ public class PresetStats {
                 expandedItems = null;
                 tagKey = null;
                 tagValue = null;
+                inOptional = false;
+                expandCombo = false;
                 current = new ItemStats();
                 current.name = attr.getValue(NAME);
             } else if (CHUNK.equals(qName)) {
                 current = new ItemStats();
                 current.name = attr.getValue(ID);
+                current.isChunk = true;
             } else if (SEPARATOR.equals(qName)) {
             } else if (LABEL.equals(qName)) {
             } else if (OPTIONAL.equals(qName)) {
+                inOptional = false; // currently doesn't make sense
             } else if (KEY.equals(qName)) {
                 String key = attr.getValue(KEY);
                 String value = attr.getValue(VALUE);
@@ -134,8 +157,12 @@ public class PresetStats {
                     current.tag = current.tag + " / " + key + "=" + value;
                 }
                 keySeen = true;
+                secondLevelKeySeen = key.equals(tagValue) || SECOND_LEVEL_KEYS.contains(key);
                 current.keyCount++;
                 current.valueCount++;
+                if (useTagInfo) {
+                    current.count = TagInfo.getTagCount(key, value);
+                }
             } else if (TEXT.equals(qName)) {
                 String key = attr.getValue(KEY);
                 uniqueKeys.add(key);
@@ -159,13 +186,13 @@ public class PresetStats {
                 }
             } else if (COMBO.equals(qName) || MULTISELECT.equals(qName)) {
                 String key = attr.getValue(KEY);
+                comboKey = key;
                 uniqueKeys.add(key);
                 current.keyCount++;
-                String delimiter = attr.getValue(DELIMITER2);
+                String delimiter = attr.getValue(DELIMITER);
                 String valuesString = attr.getValue(VALUES);
-                comboKey = attr.getValue(KEY);
                 expandedItems = null;
-                boolean expandCombo = comboKey.equals(tagValue) || SECOND_LEVEL_KEYS.contains(comboKey);
+                expandCombo = !secondLevelKeySeen && keySeen && (comboKey.equals(tagValue) || SECOND_LEVEL_KEYS.contains(comboKey));
                 if ((!keySeen && OBJECT_KEYS.contains(comboKey)) || expandCombo) {
                     expandedItems = new HashMap<>();
                 }
@@ -179,23 +206,70 @@ public class PresetStats {
                             if (expandCombo) {
                                 s.tag = tagKey + "=" + tagValue + " / " + s.tag;
                             }
-                            expandedItems.put(s.name, s);
+                            expandedItems.put(s.tag, s);
+                            if (useTagInfo) {
+                                s.count = TagInfo.getTagCount(key, v);
+                            }
                         }
                     } else {
                         current.valueCount += values.length;
+                    }
+                    if (current.isChunk) {
+                        if (current.chunkTags == null) {
+                            current.chunkTags = new HashMap<>();
+                        }
+                        current.chunkTags.put(key, Arrays.asList(values));
                     }
                     uniqueValues.addAll(Arrays.asList(values));
                 }
             } else if (ROLE.equals(qName)) {
             } else if (REFERENCE.equals(qName)) {
                 ItemStats chunk = chunks.get(attr.getValue(REF));
+                String subKey = tagValue;
                 if (chunk != null) {
+                    if (keySeen && expandedItems == null && chunk.chunkTags != null) {
+                        List<String> chunkValues = chunk.chunkTags.get(tagValue);
+                        if (chunkValues == null) {
+                            for (String comboKey : SECOND_LEVEL_KEYS) {
+                                chunkValues = chunk.chunkTags.get(comboKey);
+                                if (chunkValues != null) {
+                                    subKey = comboKey;
+                                    break;
+                                }
+                            }
+                        }
+                        if (chunkValues != null) {
+                            expandedItems = new HashMap<>();
+                            for (String v : chunkValues) {
+                                ItemStats s = new ItemStats();
+                                s.name = subKey + "=" + v;
+                                s.tag = s.name;
+                                s.tag = tagKey + "=" + tagValue + " / " + s.tag;
+                                expandedItems.put(s.tag, s);
+                                if (useTagInfo) {
+                                    s.count = TagInfo.getTagCount(tagValue, v);
+                                }
+                            }
+                            items.putAll(expandedItems);
+                            secondLevelKeySeen = true;
+                        }
+                    }
                     if (expandedItems != null) {
                         for (ItemStats s : expandedItems.values()) {
                             s.keyCount += chunk.keyCount;
                             s.valueCount += chunk.valueCount;
                         }
                     } else {
+                        if (chunk.tag != null) {
+                            String[] c = chunk.tag.split("=");
+                            if (OBJECT_KEYS.contains(c[0])) { // hack alert
+                                if (current.tag != null) {
+                                    current.tag = chunk.tag + " / " + current.tag;
+                                } else {
+                                    current.tag = chunk.tag;
+                                }
+                            }
+                        }
                         current.keyCount += chunk.keyCount;
                         current.valueCount += chunk.valueCount;
                     }
@@ -206,9 +280,26 @@ public class PresetStats {
                     ItemStats s = new ItemStats();
                     s.name = comboKey + "=" + value;
                     s.tag = s.name;
+                    if (expandCombo) {
+                        s.tag = tagKey + "=" + tagValue + " / " + s.tag;
+                    }
                     expandedItems.put(s.name, s);
+                    if (useTagInfo) {
+                        s.count = TagInfo.getTagCount(comboKey, value);
+                    }
                 } else {
                     current.valueCount++;
+                }
+                if (current.isChunk) {
+                    if (current.chunkTags == null) {
+                        current.chunkTags = new HashMap<>();
+                    }
+                    List<String> l = current.chunkTags.get(comboKey);
+                    if (l == null) {
+                        l = new ArrayList<>();
+                        current.chunkTags.put(comboKey, l);
+                    }
+                    l.add(value);
                 }
                 uniqueValues.add(value);
             } else if ("preset_link".equals(qName)) {
@@ -219,28 +310,35 @@ public class PresetStats {
         public void endElement(String uri, String localMame, String qName) throws SAXException {
             if (GROUP.equals(qName)) {
             } else if (OPTIONAL.equals(qName)) {
-            } else if (ITEM.equals(qName)) {
-                if (expandedItems != null) {
-                    items.putAll(expandedItems);
-                } else {
-                    items.put(current.tag, current);
+                inOptional = false;
+            } else if (!inOptional) {
+                if (ITEM.equals(qName)) {
+                    if (expandedItems == null) {
+                        items.put(current.tag, current);
+                    }
+                    current = null;
+                    expandedItems = null;
+                } else if (CHUNK.equals(qName)) {
+                    chunks.put(current.name, current);
+                    current = null;
+                    expandedItems = null;
+                } else if (COMBO.equals(qName) || MULTISELECT.equals(qName)) {
+                    if (expandedItems != null) {
+                        items.putAll(expandedItems);
+                    }
+                    if (expandCombo) {
+                        secondLevelKeySeen = true;
+                    }
+                    comboKey = null;
                 }
-                current = null;
-                expandedItems = null;
-            } else if (CHUNK.equals(qName)) {
-                chunks.put(current.name, current);
-                current = null;
-                expandedItems = null;
-            } else if (COMBO.equals(qName) || MULTISELECT.equals(qName)) {
-                comboKey = null;
             }
         }
     }
 
-    void parseXML(InputStream input) throws ParserConfigurationException, SAXException, IOException {
+    void parseXML(boolean useTagInfo, InputStream input) throws ParserConfigurationException, SAXException, IOException {
         SAXParser saxParser = SAXParserFactory.newInstance().newSAXParser();
 
-        handler = new MyHandler();
+        handler = new MyHandler(useTagInfo);
 
         saxParser.parse(input, handler);
     }
@@ -252,20 +350,19 @@ public class PresetStats {
         for (ItemStats s : items.values()) {
             keyCount += s.keyCount;
             valueCount += s.valueCount;
-            pw.print(s.tag + "\n");
+            pw.print(s.tag + "," + s.count + "\n");
         }
-        pw.print("\n");
-        // print a header
-        pw.print("Total items " + itemCount + "\n");
-        pw.print("Unique keys " + uniqueKeys.size() + "\n");
-        pw.print("Unique values " + uniqueValues.size() + "\n");
-        pw.print("Total key count " + keyCount + "\n");
-        pw.print("Total value count " + valueCount + "\n");
-        pw.print("Keys per item " + keyCount / itemCount + "\n");
-        pw.print("Values per item " + valueCount / itemCount + "\n");
-
-        pw.print("\n");
         pw.flush();
+        // print stats to standard out
+        System.out.print("Total items " + itemCount + "\n");
+        System.out.print("Unique keys " + uniqueKeys.size() + "\n");
+        System.out.print("Unique values " + uniqueValues.size() + "\n");
+        System.out.print("Total key count " + keyCount + "\n");
+        System.out.print("Total value count " + valueCount + "\n");
+        System.out.print("Keys per item " + keyCount / itemCount + "\n");
+        System.out.print("Values per item " + valueCount / itemCount + "\n");
+        System.out.flush();
+
     }
 
     private void setInputFilename(String fn) {
@@ -276,6 +373,7 @@ public class PresetStats {
         // defaults
         InputStream is = System.in;
         OutputStreamWriter os = null;
+        boolean useTagInfo = false;
         try {
             os = new OutputStreamWriter(System.out, "UTF-8");
 
@@ -283,29 +381,33 @@ public class PresetStats {
             p.setInputFilename("stdin");
 
             // arguments
-            Option inputFile = Option.builder("i").longOpt("input").hasArg().desc("input preset file, default: standard in").build();
+            Option inputFile = Option.builder("i").longOpt(INPUT).hasArg().desc("input preset file, default: standard in").build();
 
-            Option outputFile = Option.builder("o").longOpt("output").hasArg().desc("output stats file, default: standard out").build();
+            Option outputFile = Option.builder("o").longOpt(OUTPUT).hasArg().desc("output stats file, default: standard out").build();
+
+            Option tagInfo = Option.builder("t").longOpt(TAGINFO).desc("query taginfo for stats, default: false").build();
 
             Options options = new Options();
 
             options.addOption(inputFile);
             options.addOption(outputFile);
+            options.addOption(tagInfo);
 
             CommandLineParser parser = new DefaultParser();
             try {
                 // parse the command line arguments
                 CommandLine line = parser.parse(options, args);
-                if (line.hasOption("input")) {
+                if (line.hasOption(INPUT)) {
                     // initialise the member variable
-                    String input = line.getOptionValue("input");
+                    String input = line.getOptionValue(INPUT);
                     p.setInputFilename(input);
                     is = new FileInputStream(input);
                 }
-                if (line.hasOption("output")) {
-                    String output = line.getOptionValue("output");
+                if (line.hasOption(OUTPUT)) {
+                    String output = line.getOptionValue(OUTPUT);
                     os = new OutputStreamWriter(new FileOutputStream(output), "UTF-8");
                 }
+                useTagInfo = line.hasOption(TAGINFO);
             } catch (ParseException exp) {
                 HelpFormatter formatter = new HelpFormatter();
                 formatter.printHelp("PresetStats", options);
@@ -316,7 +418,7 @@ public class PresetStats {
             }
 
             try {
-                p.parseXML(is);
+                p.parseXML(useTagInfo, is);
                 p.dumpStats(new PrintWriter(os));
             } catch (FileNotFoundException e) {
                 e.printStackTrace();

@@ -36,7 +36,7 @@ ext {
 dependencies {
     // This dependency is exported to consumers, that is to say found on their compile classpath.
     compile 'commons-cli:commons-cli:1.4'
-    compile 'org.apache.commons:commons-lang3:3.7'
+    compile 'org.apache.commons:commons-text:1.4'
     compile 'org.jetbrains:annotations:15.0'
     compile "com.google.code.gson:gson:2.8.1"
 
@@ -54,16 +54,50 @@ task getSynonyms(type: JavaExec) {
 task convertIdPresets(type: JavaExec) {
     main = "ch.poole.osm.presetutils.ID2JOSM"
     classpath = sourceSets.main.runtimeClasspath
-    args('-c', '-o', 'build/tmp/id_preset.xml')
+    args('-o', 'build/tmp/id_preset.xml')
+    // args('-n', '-o', 'build/tmp/id_preset_notaginfo.xml')
 }
+convertIdPresets.group = 'preset stuff'
+convertIdPresets.description = 'Generate a JOSM format preset from the iD presets'
 
 task presetsStats(type: JavaExec) {
     main = "ch.poole.osm.presetutils.PresetStats"
     classpath = sourceSets.main.runtimeClasspath
-    args('-i', 'build/tmp/id_preset.xml')
-    // args('-i', 'build/tmp/defaultpresets.xml')
-    // args('-i', '/Users/simon/git/beautified-JOSM-preset/master_preset.xml')
+    // args('-ti', 'build/tmp/id_preset.xml', '-o', 'build/tmp/id_tags.txt');
+    args('-ti', 'build/tmp/id_preset_notaginfo.xml', '-o', 'build/tmp/id_tags_notaginfo.txt');
+    // args('-ti', 'build/tmp/defaultpresets.xml', '-o', 'build/tmp/josm_tags.txt')
+    // args('-ti', '/Users/simon/git/beautified-JOSM-preset/master_preset.xml', '-o', 'build/tmp/vespucci_tags.txt')
+    // args('-ti', '/Users/simon/Documents/OSM/SOTM 2018/presets-josm-20071016-current-format.xml', '-o', 'build/tmp/josm_tags_2007.txt')
 }
+presetsStats.group = 'preset stuff'
+presetsStats.description = 'Generate tag support stats for a preset'
+
+task tagsFromTaginfo(type: JavaExec) {
+    main = "ch.poole.osm.presetutils.TagsFromTaginfo"
+    classpath = sourceSets.main.runtimeClasspath
+    args('-n','-o','build/tmp/taginfo_tags_nosubtags.txt')
+    // args('-o','build/tmp/taginfo_tags.txt')
+}
+tagsFromTaginfo.group = 'preset stuff'
+tagsFromTaginfo.description = 'Generate list of object tags from taginfo'
+
+task comparePresets(type: JavaExec) {
+    main = "ch.poole.osm.presetutils.ComparePresets"
+    classpath = sourceSets.main.runtimeClasspath
+    args('-r','/Users/simon/Documents/OSM/SOTM 2018/tags_reference.txt','-i','build/tmp/vespucci_tags.txt')
+    // args('-r','build/tmp/taginfo_tags.txt','-i','build/tmp/josm_tags.txt')
+}
+comparePresets.group = 'preset stuff'
+comparePresets.description = 'Compare input tag list to reference'
+
+task mergePresetsStats(type: JavaExec) {
+    main = "ch.poole.osm.presetutils.MergePresetStats"
+    classpath = sourceSets.main.runtimeClasspath
+    args('-i', 'build/tmp/id_tags.txt', 'build/tmp/id_tags_notaginfo.txt', 'build/tmp/josm_tags.txt', 'build/tmp/vespucci_tags.txt', '/Users/simon/Documents/OSM/SOTM 2018/tags_reference.txt')
+}
+mergePresetsStats.group = 'preset stuff'
+mergePresetsStats.description = 'Merge multiple preset tag stats files'
+
 
 task sourcesJar(type: Jar) {
 	from mainSource, testSource

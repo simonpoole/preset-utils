@@ -8,16 +8,12 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Pattern;
-import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -26,8 +22,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.commons.lang3.StringEscapeUtils;
-import org.jetbrains.annotations.NotNull;
+import org.apache.commons.text.StringEscapeUtils;
 
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
@@ -42,10 +37,22 @@ public class ID2JOSM {
 
     static final String DEBUG_TAG = "ID2JOSM";
 
-    private static final int TIMEOUT = 20;
-
     enum Geometry {
-        POINT, VERTEX, LINE, AREA, RELATION
+        POINT, VERTEX, LINE, AREA, RELATION;
+
+        public String toTagInfo() {
+            switch (this) {
+            case POINT:
+            case VERTEX:
+                return "nodes";
+            case LINE:
+            case AREA:
+                return "ways";
+            case RELATION:
+                return "relations";
+            }
+            return "all";
+        }
     };
 
     enum FieldType {
@@ -58,18 +65,19 @@ public class ID2JOSM {
     }
 
     static class Field {
-        String                    label;
-        List<ValueAndDescription> keys;
-        FieldType                 fieldType;
-        Geometry                  geometry;
-        boolean                   universal     = false;
-        String                    defaultValue;
-        String                    placeHolder;
-        List<ValueAndDescription> options;
-        boolean                   caseSensitive = false;
-        boolean                   snakeCase     = true;
+        String                                 label;
+        List<ValueAndDescription>              keys;
+        FieldType                              fieldType;
+        Geometry                               geometry;
+        boolean                                universal     = false;
+        String                                 defaultValue;
+        String                                 placeHolder;
+        List<ValueAndDescription>              options;
+        boolean                                caseSensitive = false;
+        boolean                                snakeCase     = true;
+        Map<String, List<ValueAndDescription>> cachedOptions = new HashMap<>();
 
-        public void toJosm(PrintWriter writer) {
+        public void toJosm(PrintWriter writer, List<Geometry> currentGeoms) {
             int baseIndent = 2;
             switch (fieldType) {
             case TEXT:
@@ -104,22 +112,41 @@ public class ID2JOSM {
             case SEMICOMBO:
             case NETWORKCOMBO:
                 if (keys != null) {
+                    boolean resetOptions = options == null;
                     for (ValueAndDescription key : keys) {
+                        boolean multiselect = FieldType.SEMICOMBO.equals(fieldType);
                         if (options == null) {
-                            optionsComment(writer, baseIndent);
-                            options = getOptionsFromTagInfo(key.value, 0);
+                            if (tagInfoMode) {
+                                optionsComment(writer, baseIndent);
+                                String taginfoFilter = null;
+                                if (currentGeoms == null) {
+                                    if (geometry != null) {
+                                        taginfoFilter = geometry.toTagInfo();
+                                    }
+                                } else if (currentGeoms.size() == 1) {
+                                    taginfoFilter = currentGeoms.get(0).toTagInfo();
+                                }
+                                List<ValueAndDescription> fromCache = cachedOptions.get(taginfoFilter);
+                                if (fromCache != null) {
+                                    options = fromCache;
+                                } else {
+                                    options = TagInfo.getOptionsFromTagInfo(key.value, taginfoFilter, true, 0, 25, true);
+                                    cachedOptions.put(taginfoFilter, options);
+                                }
+                            } else {
+                                return;
+                            }
                         }
                         indent(writer, baseIndent);
                         String labelText = key.description != null ? key.description : (label != null && keys.size() == 1 ? label : null);
-                        writer.println(
-                                "<" + (FieldType.SEMICOMBO.equals(fieldType) ? "multiselect" : "combo") + " key=\"" + StringEscapeUtils.escapeXml11(key.value)
-                                        + "\"" + (labelText != null ? " text=\"" + StringEscapeUtils.escapeXml11(labelText) + "\"" : ""));
+                        writer.println("<" + (multiselect ? "multiselect" : "combo") + " key=\"" + StringEscapeUtils.escapeXml11(key.value) + "\""
+                                + (labelText != null ? " text=\"" + StringEscapeUtils.escapeXml11(labelText) + "\"" : ""));
                         indent(writer, baseIndent + 1);
                         writer.print("values=\"");
                         for (int i = 0; i < options.size(); i++) {
                             writer.print(StringEscapeUtils.escapeXml11(options.get(i).value));
                             if (i < options.size() - 1) {
-                                writer.print(",");
+                                writer.print(multiselect ? ";" : ",");
                             }
                         }
                         writer.println("\"");
@@ -133,10 +160,13 @@ public class ID2JOSM {
                                 writer.print(StringEscapeUtils.escapeXml11(v.value));
                             }
                             if (i < options.size() - 1) {
-                                writer.print(",");
+                                writer.print(multiselect ? ";" : ",");
                             }
                         }
                         writer.println("\" />");
+                    }
+                    if (resetOptions) {
+                        options = null;
                     }
                 }
                 break;
@@ -144,8 +174,12 @@ public class ID2JOSM {
                 if (keys != null && keys.size() == 1) {
                     ValueAndDescription key = keys.get(0);
                     if (options == null) {
-                        optionsComment(writer, baseIndent);
-                        options = getKeysFromTagInfo(key.value);
+                        if (tagInfoMode) {
+                            optionsComment(writer, baseIndent);
+                            options = TagInfo.getKeysFromTagInfo(key.value);
+                        } else {
+                            return;
+                        }
                     }
                     for (ValueAndDescription v : options) {
                         indent(writer, baseIndent);
@@ -297,7 +331,7 @@ public class ID2JOSM {
                         indent(writer, 2);
                         writer.println("<reference ref=\"" + StringEscapeUtils.escapeXml11(fieldKeys.get(field)) + "\" />");
                     } else {
-                        field.toJosm(writer);
+                        field.toJosm(writer, geometries);
                     }
                 }
             }
@@ -312,7 +346,8 @@ public class ID2JOSM {
 
     static List<Item> items = new ArrayList<>();
 
-    private static boolean chunkMode = false;
+    private static boolean chunkMode   = false;
+    private static boolean tagInfoMode = true;
 
     /**
      * @param printWriter
@@ -327,7 +362,7 @@ public class ID2JOSM {
             // field definitions read 1st
             // https://raw.githubusercontent.com/openstreetmap/iD/master/data/presets/fields.json
             URL url = new URL("https://raw.githubusercontent.com/openstreetmap/iD/master/data/presets/fields.json");
-            is = openConnection(url);
+            is = Utils.openConnection(url);
             reader = new JsonReader(new InputStreamReader(is, "UTF-8"));
             try {
                 reader.beginObject();
@@ -444,7 +479,7 @@ public class ID2JOSM {
             // presets def
             // "https://raw.githubusercontent.com/openstreetmap/iD/master/data/presets/presets.json"
             url = new URL("https://raw.githubusercontent.com/openstreetmap/iD/master/data/presets/presets.json");
-            is = openConnection(url);
+            is = Utils.openConnection(url);
             reader = new JsonReader(new InputStreamReader(is, "UTF-8"));
             try {
                 reader.beginObject();
@@ -546,7 +581,7 @@ public class ID2JOSM {
                             indent(printWriter, 1);
                             printWriter.println("<chunk id=\"" + fieldName + "\">");
                             try {
-                                field.toJosm(printWriter);
+                                field.toJosm(printWriter, null);
                             } catch (Exception ex) {
                                 System.out.println("Exception for " + fieldName);
                                 ex.printStackTrace();
@@ -587,191 +622,9 @@ public class ID2JOSM {
         }
     }
 
-    /** the following is hardwired in iD **/
-    static final Pattern canHaveUppercase = Pattern.compile("network|taxon|genus|species|brand|grape_variety|rating|:output|_hours|_times|royal_cypher");
-    static final Pattern hasPunctuation   = Pattern.compile("[;,]");
-
-    public static List<ValueAndDescription> getOptionsFromTagInfo(String key, int minCount) {
-        // "https://taginfo.openstreetmap.org/api/4/key/values?key=aerialway&page=1&rp=10&sortname=count_all&sortorder=desc"
-        boolean allowUppercase = canHaveUppercase.matcher(key).matches();
-        List<ValueAndDescription> result = new ArrayList<>();
-        JsonReader reader = null;
-        InputStream is = null;
-        try {
-            URL url = new URL("https://taginfo.openstreetmap.org/api/4/key/values?key=" + key + "&page=1&rp=20&sortname=count_all&sortorder=desc");
-            is = openConnection(url);
-            reader = new JsonReader(new InputStreamReader(is, "UTF-8"));
-            try {
-                reader.beginObject();
-                while (reader.hasNext()) {
-                    String jsonName = reader.nextName();
-                    if ("data".equals(jsonName)) {
-                        reader.beginArray();
-                        while (reader.hasNext()) {
-                            reader.beginObject();
-                            String value = null;
-                            boolean inWiki = false;
-                            int count = 0;
-                            while (reader.hasNext()) {
-                                jsonName = reader.nextName();
-                                switch (jsonName) {
-                                case "value":
-                                    value = reader.nextString();
-                                    break;
-                                case "in_wiki":
-                                    inWiki = reader.nextBoolean();
-                                    break;
-                                case "count":
-                                    count = reader.nextInt();
-                                    break;
-                                default:
-                                    reader.skipValue();
-                                }
-                            }
-                            reader.endObject();
-                            if (value != null && (inWiki || count >= minCount) && (allowUppercase || value.equals(value.toLowerCase()))
-                                    && !hasPunctuation.matcher(value).matches()) {
-                                ValueAndDescription v = new ValueAndDescription();
-                                v.value = value;
-                                result.add(v);
-                            }
-                        }
-                        reader.endArray();
-                    } else {
-                        reader.skipValue();
-                    }
-                }
-                reader.endObject();
-            } catch (IOException e) {
-                System.out.println(e.getMessage());
-            }
-        } catch (MalformedURLException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } finally {
-            try {
-                if (reader != null) {
-                    reader.close();
-                }
-            } catch (IOException ioex) {
-            }
-            try {
-                if (is != null) {
-                    is.close();
-                }
-            } catch (IOException ioex) {
-            }
-        }
-        return result;
-    }
-
-    public static List<ValueAndDescription> getKeysFromTagInfo(String partialKey) {
-        // "https://taginfo.openstreetmap.org/api/4/keys/all?query=communication:&page=1&rp=10&filter=in_wiki&sortname=key&sortorder=asc"
-        List<ValueAndDescription> result = new ArrayList<>();
-        JsonReader reader = null;
-        InputStream is = null;
-        try {
-            URL url = new URL("https://taginfo.openstreetmap.org/api/4/keys/all?query=" + partialKey + "&sortname=count_all&sortorder=desc&page=1&rp=25");
-            is = openConnection(url);
-            reader = new JsonReader(new InputStreamReader(is, "UTF-8"));
-            try {
-                reader.beginObject();
-                while (reader.hasNext()) {
-                    String jsonName = reader.nextName();
-                    if ("data".equals(jsonName)) {
-                        reader.beginArray();
-                        while (reader.hasNext()) {
-                            reader.beginObject();
-                            while (reader.hasNext()) {
-                                jsonName = reader.nextName();
-                                if ("key".equals(jsonName)) {
-                                    String key = reader.nextString();
-                                    if (key.startsWith(partialKey)) {
-                                        String value = key.replaceFirst(partialKey, "");
-                                        if (!value.contains(":")) {
-                                            ValueAndDescription v = new ValueAndDescription();
-                                            v.value = value;
-                                            result.add(v);
-                                        }
-                                    }
-                                } else {
-                                    reader.skipValue();
-                                }
-                            }
-                            reader.endObject();
-                        }
-                        reader.endArray();
-                    } else {
-                        reader.skipValue();
-                    }
-                }
-                reader.endObject();
-            } catch (IOException e) {
-                System.out.println(e.getMessage());
-            }
-        } catch (MalformedURLException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
-        } finally {
-            try {
-                if (reader != null) {
-                    reader.close();
-                }
-            } catch (IOException ioex) {
-            }
-            try {
-                if (is != null) {
-                    is.close();
-                }
-            } catch (IOException ioex) {
-            }
-        }
-        return result;
-    }
-
     static void indent(PrintWriter writer, int times) {
         for (int i = 0; i < times; i++) {
             writer.print("    ");
-        }
-    }
-
-    /**
-     * Given an URL open the connection and return the InputStream
-     * 
-     * @param url the URL
-     * @return the InputStream
-     * @throws IOException
-     */
-    private static InputStream openConnection(@NotNull URL url) throws IOException {
-        HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        boolean isServerGzipEnabled;
-
-        // Log.d(DEBUG_TAG, "get input stream for " + url.toString());
-
-        // --Start: header not yet send
-        con.setReadTimeout(TIMEOUT * 1000);
-        con.setConnectTimeout(TIMEOUT * 1000);
-        con.setRequestProperty("Accept-Encoding", "gzip");
-        con.setRequestProperty("User-Agent", ID2JOSM.class.getCanonicalName());
-        con.setInstanceFollowRedirects(true);
-
-        // --Start: got response header
-        isServerGzipEnabled = "gzip".equals(con.getHeaderField("Content-encoding"));
-
-        if (con.getResponseCode() != HttpURLConnection.HTTP_OK) {
-            throw new IOException("Got " + con.getResponseMessage());
-        }
-
-        if (isServerGzipEnabled) {
-            return new GZIPInputStream(con.getInputStream());
-        } else {
-            return con.getInputStream();
         }
     }
 
@@ -782,10 +635,13 @@ public class ID2JOSM {
 
         Option chunk = Option.builder("c").longOpt("chunk").desc("output id fields as chunks").build();
 
+        Option noTagInfo = Option.builder("n").longOpt("notaginfo").desc("don't query taginfo for keys and values").build();
+
         Options options = new Options();
 
         options.addOption(outputFile);
         options.addOption(chunk);
+        options.addOption(noTagInfo);
 
         CommandLineParser parser = new DefaultParser();
         try {
@@ -797,6 +653,7 @@ public class ID2JOSM {
                     os = new FileOutputStream(output);
                 }
                 chunkMode = line.hasOption("c");
+                tagInfoMode = !line.hasOption("n");
             } catch (ParseException exp) {
                 HelpFormatter formatter = new HelpFormatter();
                 formatter.printHelp("ID2JOSM", options);
