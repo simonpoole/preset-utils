@@ -94,6 +94,7 @@
                     <element name="key" type="tns:key" />
                     <element name="optional" type="tns:optional" minOccurs="0" />
                 </choice>
+                <element name="roles" type="tns:roles" minOccurs="0" maxOccurs="1" />
             </sequence>
             <sequence>
                 <!-- Cannot use tns:list_elements here because reference is present both in optional_elements and list_elements
