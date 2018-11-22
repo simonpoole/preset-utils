@@ -13,6 +13,7 @@
     <xsl:template match="m:presets/@object_keys" />
     <xsl:template match="m:checkgroup/@text" />
     <xsl:template match="m:checkgroup/@text_context" />
+    <xsl:template match="m:group/@items_sort" />
     <!--identity template copies everything forward by default-->
     <xsl:template match="@*|node()">
         <xsl:copy>
