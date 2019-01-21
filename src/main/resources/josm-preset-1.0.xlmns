@@ -93,8 +93,8 @@
                     <group ref="tns:optional_elements" />
                     <element name="key" type="tns:key" />
                     <element name="optional" type="tns:optional" minOccurs="0" />
+                    <element name="roles" type="tns:roles" minOccurs="0" />
                 </choice>
-                <element name="roles" type="tns:roles" minOccurs="0" maxOccurs="1" />
             </sequence>
             <sequence>
                 <!-- Cannot use tns:list_elements here because reference is present both in optional_elements and list_elements
@@ -140,7 +140,8 @@
     </complexType>
 
     <complexType name="link">
-        <attribute name="href" type="string" use="required" />
+        <attribute name="wiki" type="string" />
+        <attribute name="href" type="string" />
         <attribute name="text" type="string" />
         <attribute name="text_context" type="string" />
 
