@@ -56,7 +56,7 @@ public class ID2JOSM {
     };
 
     enum FieldType {
-        TEXT, NUMBER, LOCALIZED, TEL, EMAIL, URL, TEXTAREA, COMBO, TYPECOMBO, MULTICOMBO, NETWORKCOMBO, SEMICOMBO, CHECK, DEFAULTCHECK, ONEWAYCHECK, RADIO, STRUCTURERADIO, ACCESS, ADDRESS, CYCLEWAY, MAXSPEED, RESTRICTIONS, WIKIPEDIA
+        TEXT, NUMBER, LOCALIZED, TEL, EMAIL, URL, TEXTAREA, COMBO, TYPECOMBO, MULTICOMBO, NETWORKCOMBO, SEMICOMBO, CHECK, DEFAULTCHECK, ONEWAYCHECK, RADIO, STRUCTURERADIO, ACCESS, ADDRESS, CYCLEWAY, MAXSPEED, RESTRICTIONS, WIKIPEDIA, WIKIDATA
     };
 
     static class ValueAndDescription {
@@ -93,6 +93,7 @@ public class ID2JOSM {
             case MAXSPEED:
             case RESTRICTIONS:
             case WIKIPEDIA:
+            case WIKIDATA:
                 if (keys != null) {
                     for (ValueAndDescription key : keys) {
                         indent(writer, baseIndent);
@@ -506,7 +507,7 @@ public class ID2JOSM {
                                         tag.key = reader.nextName();
                                         tag.value = reader.nextString();
                                         current.tags.add(tag);
-                                        if ("name".equals(tag.key) && tag.value != null && !"".equals(tag.value)) {
+                                        if (("name".equals(tag.key) || "brand:wikidata".equals(tag.key)) && tag.value != null && !"".equals(tag.value)) {
                                             save = false; // this removes entries generated from the name suggestion
                                                           // index
                                         }
