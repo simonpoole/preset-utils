@@ -87,7 +87,6 @@ public class ID2JOSM {
             case EMAIL:
             case URL:
             case TEXTAREA:
-            case ACCESS:
             case ADDRESS:
             case CYCLEWAY:
             case MAXSPEED:
@@ -108,6 +107,7 @@ public class ID2JOSM {
                     }
                 }
                 break;
+            case ACCESS:
             case COMBO:
             case TYPECOMBO:
             case SEMICOMBO:
