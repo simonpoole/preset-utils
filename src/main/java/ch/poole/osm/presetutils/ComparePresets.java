@@ -18,6 +18,7 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Compare the output of PresetStats for two presets
@@ -33,6 +34,7 @@ public class ComparePresets {
 
     private static final String REFERENCE = "reference";
     private static final String INPUT     = "input";
+    private static final String DEPTH     = "depth";
 
     public static void main(String[] args) {
         // defaults
@@ -40,6 +42,7 @@ public class ComparePresets {
         PrintWriter pw = null;
         String input = null;
         String reference = null;
+        int depth = 0;
         try {
             os = new OutputStreamWriter(System.out, "UTF-8");
 
@@ -47,11 +50,14 @@ public class ComparePresets {
             Option inputFile = Option.builder("i").longOpt(INPUT).hasArg().desc("input preset file").build();
 
             Option referenceFile = Option.builder("r").longOpt(REFERENCE).hasArg().desc("input reference file").build();
+            
+            Option depthOpt = Option.builder("d").longOpt(DEPTH).hasArg().desc("number of hierarchy steps to consider, 0 = all and is the default").build();
 
             Options options = new Options();
 
             options.addOption(inputFile);
             options.addOption(referenceFile);
+            options.addOption(depthOpt);
 
             CommandLineParser parser = new DefaultParser();
             try {
@@ -62,6 +68,14 @@ public class ComparePresets {
                 }
                 if (line.hasOption(REFERENCE)) {
                     reference = line.getOptionValue(REFERENCE);
+                }
+                if (line.hasOption(DEPTH)) {
+                    String depthString = line.getOptionValue(DEPTH);
+                    try {
+                        depth = Integer.parseInt(depthString);
+                    } catch (NumberFormatException e) {
+                        throw new ParseException(e.getMessage());
+                    }
                 }
             } catch (ParseException exp) {
                 HelpFormatter formatter = new HelpFormatter();
@@ -85,13 +99,13 @@ public class ComparePresets {
             Set<String> referenceTags = new HashSet<>();
             for (String line : referenceList) {
                 String[] v = line.split(",");
-                referenceTags.add(v[0]);
+                referenceTags.add(truncHierarchy(depth,v[0]));
             }
 
             Set<String> inputTags = new HashSet<>();
             for (String line : inputList) {
                 String[] v = line.split(",");
-                inputTags.add(v[0]);
+                inputTags.add(truncHierarchy(depth,v[0]));
             }
 
             int inReference = 0;
@@ -124,6 +138,26 @@ public class ComparePresets {
             } catch (IOException e) {
                 // NOSONAR
             }
+        }
+    }
+
+    /**
+     * Get the number of hierarchies specified by depth from value 
+     * 
+     * @param depth the number of hierarchies, 0 = all
+     * @param value the input string in the format h0 / h1 / h2 ....
+     * @return
+     */
+    private static String truncHierarchy(int depth, @NotNull String value) {
+        if (depth == 0) {
+            return value;
+        } else {
+            StringBuilder result = new StringBuilder();
+            String[] hierarchies = value.split("/");
+            for (int i = 0; i < Integer.min(depth, hierarchies.length); i++) {
+                result.append(hierarchies[i].trim()); 
+            }
+            return result.toString();
         }
     }
 }
