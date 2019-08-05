@@ -59,11 +59,6 @@ public class ID2JOSM {
         TEXT, NUMBER, LOCALIZED, TEL, EMAIL, URL, TEXTAREA, COMBO, TYPECOMBO, MULTICOMBO, NETWORKCOMBO, SEMICOMBO, CHECK, DEFAULTCHECK, ONEWAYCHECK, RADIO, STRUCTURERADIO, ACCESS, ADDRESS, CYCLEWAY, MAXSPEED, RESTRICTIONS, WIKIPEDIA, WIKIDATA
     };
 
-    static class ValueAndDescription {
-        String value;
-        String description;
-    }
-
     static class Field {
         String                                 label;
         List<ValueAndDescription>              keys;
