@@ -12,6 +12,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -60,6 +61,7 @@ public class ID2JOSM {
     };
 
     static class Field {
+        String                                 name;
         String                                 label;
         List<ValueAndDescription>              keys;
         FieldType                              fieldType;
@@ -73,7 +75,10 @@ public class ID2JOSM {
         Map<String, List<ValueAndDescription>> cachedOptions = new HashMap<>();
 
         public void toJosm(PrintWriter writer, List<Geometry> currentGeoms) {
-            int baseIndent = 2;
+            toJosm(writer, currentGeoms, 2);
+        }
+
+        public void toJosm(PrintWriter writer, List<Geometry> currentGeoms, int baseIndent) {
             switch (fieldType) {
             case TEXT:
             case NUMBER:
@@ -237,18 +242,22 @@ public class ID2JOSM {
         }
 
         String fieldType2Attribute(FieldType fieldType) {
-            switch (fieldType) {
-            case LOCALIZED:
-                return " i18n=\"true\"";
-            case URL:
-                return " value_type=\"website\"";
-            case WIKIPEDIA:
-                return " value_type=\"wikipedia\"";
-            case TEL:
-                return " value_type=\"phone\"";
-            case NUMBER:
-                return " value_type=\"integer\"";
-            default:
+            if (!josmOnlyMode) {
+                switch (fieldType) {
+                case LOCALIZED:
+                    return " i18n=\"true\"";
+                case URL:
+                    return " value_type=\"website\"";
+                case WIKIPEDIA:
+                    return " value_type=\"wikipedia\"";
+                case TEL:
+                    return " value_type=\"phone\"";
+                case NUMBER:
+                    return " value_type=\"integer\"";
+                default:
+                    return "";
+                }
+            } else {
                 return "";
             }
         }
@@ -291,17 +300,20 @@ public class ID2JOSM {
     }
 
     static class Item {
+        public String  path;
         String         name;
         List<Geometry> geometries;
         List<Tag>      tags;
         List<Tag>      addTags;
         List<Tag>      removeTags;
         List<Field>    fields;           // might use chunk references here
+        List<Field>    moreFields;
         boolean        searchable = true;
+        Tag            reference;
 
         public void toJosm(PrintWriter writer) {
             indent(writer, 1);
-            writer.print("<item name=\"" + name + "\" ");
+            writer.print("<item name=\"" + StringEscapeUtils.escapeXml11(name) + "\" ");
             if (geometries != null) {
                 List<Geometry> temp = new ArrayList<>();
                 // squash vertex and node
@@ -338,7 +350,22 @@ public class ID2JOSM {
                 }
                 writer.print("\" ");
             }
-            writer.println((!searchable ? "deprecated=\"true\" " : "") + "preset_name_label=\"true\">");
+            if (!josmOnlyMode) {
+                writer.print((!searchable ? "deprecated=\"true\" " : ""));
+            }
+            writer.println("preset_name_label=\"true\">");
+
+            if (reference != null) {
+                if (reference.key != null) {
+                    indent(writer, 2);
+                    if (reference.value != null) {
+                        writer.println("<link wiki=\"Tag:" + reference.key + "=" + reference.value + "\" />");
+                    } else {
+                        writer.println("<link wiki=\"Key:" + reference.key + "\" />");
+                    }
+                }
+            }
+
             List<Tag> tempTags = (tags == null ? new ArrayList<Tag>() : new ArrayList<>(tags));
 
             // try to keep top level tags on top
@@ -376,8 +403,39 @@ public class ID2JOSM {
                     }
                 }
             }
+
+            if (moreFields != null && !moreFields.isEmpty()) {
+                indent(writer, 2);
+                writer.println("<optional>");
+                for (Field field : moreFields) {
+                    if (chunkMode) {
+                        indent(writer, 3);
+                        writer.println("<reference ref=\"" + StringEscapeUtils.escapeXml11(fieldKeys.get(field)) + "\" />");
+                    } else {
+                        field.toJosm(writer, geometries, 3);
+                    }
+                }
+                indent(writer, 2);
+                writer.println("</optional>");
+            }
+
             indent(writer, 1);
             writer.println("</item>");
+        }
+
+        List<String> tagKeys() {
+            List<String> result = new ArrayList<>();
+            if (tags != null) {
+                for (Tag t : tags) {
+                    result.add(t.key);
+                }
+            }
+            if (addTags != null) {
+                for (Tag t : addTags) {
+                    result.add(t.key);
+                }
+            }
+            return result;
         }
     }
 
@@ -385,10 +443,11 @@ public class ID2JOSM {
 
     static Map<Field, String> fieldKeys = new HashMap<>();
 
-    static List<Item> items = new ArrayList<>();
+    static LinkedHashMap<String, Item> items = new LinkedHashMap<>();
 
-    private static boolean chunkMode   = false;
-    private static boolean tagInfoMode = true;
+    private static boolean chunkMode    = false;
+    private static boolean tagInfoMode  = true;
+    private static boolean josmOnlyMode = false;
 
     /**
      * @param printWriter
@@ -415,6 +474,7 @@ public class ID2JOSM {
                             jsonName = reader.nextName();
                             Field current = new Field();
                             fields.put(jsonName, current);
+                            current.name = jsonName;
                             fieldKeys.put(current, jsonName);
                             reader.beginObject();
                             while (reader.hasNext()) {
@@ -531,11 +591,14 @@ public class ID2JOSM {
                         while (reader.hasNext()) {
                             jsonName = reader.nextName();
                             Item current = new Item();
-                            current.name = jsonName;
+                            current.path = jsonName;
                             reader.beginObject();
                             boolean save = true;
                             while (reader.hasNext()) {
                                 switch (reader.nextName()) {
+                                case "name":
+                                    current.name = reader.nextString();
+                                    break;
                                 case "searchable":
                                     current.searchable = reader.nextBoolean();
                                     break;
@@ -587,20 +650,91 @@ public class ID2JOSM {
                                 case "fields":
                                     reader.beginArray();
                                     current.fields = new ArrayList<Field>();
+                                    List<String> tagKeys = current.tagKeys();
                                     while (reader.hasNext()) {
-                                        Field field = fields.get(reader.nextString());
-                                        if (field != null) {
-                                            current.fields.add(field);
-                                        }
+                                        String fieldName = reader.nextString();
+                                        addFields(current.fields, tagKeys, fieldName);
                                     }
                                     reader.endArray();
                                     break;
+                                case "moreFields":
+                                    reader.beginArray();
+                                    current.moreFields = new ArrayList<Field>();
+                                    tagKeys = current.tagKeys();
+                                    while (reader.hasNext()) {
+                                        String fieldName = reader.nextString();
+                                        addFields(current.moreFields, tagKeys, fieldName);
+                                    }
+                                    reader.endArray();
+                                    break;
+                                case "reference":
+                                    reader.beginObject();
+                                    current.reference = new Tag();
+                                    while (reader.hasNext()) {
+                                        switch (reader.nextName()) {
+                                        case "key":
+                                            current.reference.key = reader.nextString();
+                                            break;
+                                        case "value":
+                                            current.reference.value = reader.nextString();
+                                            break;
+                                        }
+                                    }
+                                    reader.endObject();
+                                    break;
+                                case "matchScore":
+                                case "countryCodes":
+                                case "replacement":
+                                case "icon":
+                                case "imageURL":
+                                case "terms":
                                 default:
                                     reader.skipValue();
                                 }
                             }
                             if (save) {
-                                items.add(current);
+                                items.put(current.path, current);
+                                if ((current.fields == null || current.fields.isEmpty()) && (current.moreFields == null || current.moreFields.isEmpty())) {
+                                    // implicit inheritance
+                                    int lastSlash = current.path.lastIndexOf('/');
+                                    if (lastSlash > 0) {
+                                        String parentPath = current.path.substring(0, lastSlash);
+                                        Item parent = items.get(parentPath);
+                                        if (parent != null) {
+                                            List<String> tagKeys = current.tagKeys();
+                                            current.fields = new ArrayList<>();
+                                            if (parent.fields != null) {
+                                                for (Field f : parent.fields) {
+                                                    addFields(current.fields, tagKeys, f.name);
+                                                }
+                                            }
+                                            if (parent.moreFields != null) {
+                                                current.moreFields = new ArrayList<>();
+                                                for (Field f : parent.moreFields) {
+                                                    addFields(current.moreFields, tagKeys, f.name);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                // remove duplicate tags/fields, can't do this before parsing the item is finished
+                                if (current.tags != null && current.fields != null) {
+                                    for (Tag t : new ArrayList<>(current.tags)) {
+                                        for (Field f : new ArrayList<>(current.fields)) {
+                                            for (ValueAndDescription vad : f.keys) {
+                                                if (vad.value.equals(t.key)) {
+                                                    if ("*".equals(t.value)) {
+                                                        current.tags.remove(t); // remove the tag
+                                                    } else {
+                                                        // we can't actually check against the values here as the
+                                                        // taginfo queries haven't run yet
+                                                        current.fields.remove(f); // remove field
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                             reader.endObject();
                         }
@@ -632,7 +766,7 @@ public class ID2JOSM {
                         }
                     }
                 }
-                for (Item item : items) {
+                for (Item item : items.values()) {
                     try {
                         item.toJosm(printWriter);
                     } catch (Exception ex) {
@@ -645,7 +779,9 @@ public class ID2JOSM {
             } catch (IOException e) {
                 System.out.println(e.getMessage());
             }
-        } catch (IOException e) {
+        } catch (
+
+        IOException e) {
             System.out.println(e.getMessage());
         } finally {
             try {
@@ -659,6 +795,48 @@ public class ID2JOSM {
                     is.close();
                 }
             } catch (IOException ioex) {
+            }
+        }
+    }
+
+    /**
+     * @param itemFields
+     * @param tagKeys
+     * @param fieldName
+     */
+    public static void addFields(Item item, List<Field> itemFields, List<String> tagKeys, String fieldName) {
+        addFields(itemFields, tagKeys, fieldName);
+    }
+
+    /**
+     * @param itemFields
+     * @param tagKeys
+     * @param fieldName
+     */
+    public static void addFields(List<Field> itemFields, List<String> tagKeys, String fieldName) {
+        if (fieldName.charAt(0) == '{' && fieldName.charAt(fieldName.length() - 1) == '}') {
+            String refItemName = fieldName.substring(1, fieldName.length() - 1);
+            Item refItem = items.get(refItemName);
+            if (refItem != null) {
+                List<Field> refFields = refItem.fields;
+                for (Field f : refFields) {
+                    boolean hasKey = false;
+                    for (ValueAndDescription k : f.keys) {
+                        if (tagKeys.contains(k.value)) { // don't overwrite
+                            hasKey = true;
+                            break;
+                        }
+                    }
+                    if (hasKey) {
+                        break;
+                    }
+                    itemFields.add(f);
+                }
+            }
+        } else {
+            Field field = fields.get(fieldName);
+            if (field != null) {
+                itemFields.add(field);
             }
         }
     }
@@ -678,11 +856,14 @@ public class ID2JOSM {
 
         Option noTagInfo = Option.builder("n").longOpt("notaginfo").desc("don't query taginfo for keys and values").build();
 
+        Option josmOnlyOpt = Option.builder("j").longOpt("josmonly").desc("don't use Vespucci extensions").build();
+
         Options options = new Options();
 
         options.addOption(outputFile);
         options.addOption(chunk);
         options.addOption(noTagInfo);
+        options.addOption(josmOnlyOpt);
 
         CommandLineParser parser = new DefaultParser();
         try {
@@ -695,6 +876,7 @@ public class ID2JOSM {
                 }
                 chunkMode = line.hasOption("c");
                 tagInfoMode = !line.hasOption("n");
+                josmOnlyMode = line.hasOption('j');
             } catch (ParseException exp) {
                 HelpFormatter formatter = new HelpFormatter();
                 formatter.printHelp("ID2JOSM", options);

@@ -46,7 +46,9 @@ Retrieve synonym values from the iD editor repository and output a json object c
 
 Generate a JOSM preset from the iD preset configuration, retrieving some values from taginfo similar to what iD does.
 
-Note this does not include any icons from the preset and is mainly useful for statistical and comparison purposes. Further it uses some extensions to the original JOSM schema that need to be removed if you actually want to use the output in JOSM (use _xmlstarlet tr src/main/resources/toJOSM.xslt ..._ to do that)
+Note this does not include any icons from the preset and while it is mainly useful for statistical and comparison purposes, the output is fully functional.
+
+Currently ignored iD preset features are "matchScore", "countryCodes", "replacement", "removeTags", "icon", "imageURL" and "terms" (the Synonym tool can be used to turn the term field in to something useful).
 
 ### Usage
 
@@ -54,6 +56,7 @@ Note this does not include any icons from the preset and is mainly useful for st
      -c,--chunk            if set iD field definitions will be converted to JOSM preset "chunks", if not set the fields
                            are expanded inline
      -n,--notaginfo        don't query taginfo for values and keys
+     -j,--josmonly         don't use Vespucci extensions to the JOSM preset format
      
 ## PresetStats
 
