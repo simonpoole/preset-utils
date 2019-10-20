@@ -15,8 +15,6 @@ import java.util.regex.Pattern;
 
 import com.google.gson.stream.JsonReader;
 
-import ch.poole.osm.presetutils.ID2JOSM.ValueAndDescription;
-
 public class TagInfo {
 
     /** the following is hardwired in iD **/
@@ -29,6 +27,17 @@ public class TagInfo {
         return asciiEncoder.canEncode(v);
     }
 
+    /**
+     * This tries to do roughly the same as iD does when encountering an "options" section in a preset field
+     * 
+     * @param key
+     * @param filter
+     * @param useWiki
+     * @param minCount
+     * @param maxResults
+     * @param multiSelect
+     * @return
+     */
     public static List<ValueAndDescription> getOptionsFromTagInfo(String key, String filter, boolean useWiki, int minCount, int maxResults,
             boolean multiSelect) {
         try {
@@ -37,8 +46,7 @@ public class TagInfo {
         }
         // "https://taginfo.openstreetmap.org/api/4/key/values?key=aerialway&page=1&rp=10&sortname=count_all&sortorder=desc"
         boolean allowUppercase = canHaveUppercase.matcher(key).matches();
-        List<ValueAndDescription> result = new ArrayList<>();
-        Set<String> values = new HashSet<>();
+        Set<ValueAndDescription> values = new HashSet<>();
         JsonReader reader = null;
         InputStream is = null;
         try {
@@ -90,10 +98,18 @@ public class TagInfo {
                                 if (multiSelect && value.contains(";")) {
                                     // currently not used as the regexp throws out string containing ;
                                     for (String s : value.split(";")) {
-                                        values.add(s.trim());
+                                        ValueAndDescription vad = new ValueAndDescription();
+                                        vad.value = s.trim();
+                                        vad.count = count;
+                                        values.add(vad);
+                                        System.out.println(vad.value);
                                     }
                                 } else {
-                                    values.add(value);
+                                    ValueAndDescription vad = new ValueAndDescription();
+                                    vad.value = value.trim();
+                                    vad.count = count;
+                                    values.add(vad);
+                                    System.out.println(vad.value);
                                 }
                             }
                         }
@@ -126,13 +142,7 @@ public class TagInfo {
             } catch (IOException ioex) {
             }
         }
-        for (String s : values) {
-            ValueAndDescription v = new ValueAndDescription();
-            v.value = s;
-            System.out.println(s);
-            result.add(v);
-        }
-        return result;
+        return new ArrayList<>(values);
     }
 
     public static List<ValueAndDescription> getKeysFromTagInfo(String partialKey) {
@@ -282,7 +292,7 @@ public class TagInfo {
         return count;
     }
 
-    public static List<ValueAndDescription> getCombinationKeys(String key, int minCount) {
+    public static List<ValueAndDescription> getCombinationKeys(String key, String filter, int minCount) {
         // "https://taginfo.openstreetmap.org/api/4/key/combinations?key=highway&page=1&rp=10&sortname=together_count&sortorder=desc"
         try {
             Thread.sleep(500);
@@ -292,7 +302,8 @@ public class TagInfo {
         JsonReader reader = null;
         InputStream is = null;
         try {
-            URL url = new URL("https://taginfo.openstreetmap.org/api/4/key/combinations?key=" + key + "&sortname=together_count&sortorder=desc");
+            URL url = new URL("https://taginfo.openstreetmap.org/api/4/key/combinations?" + (filter != null ? "filter=" + filter + "&" : "") + "key=" + key
+                    + "&sortname=together_count&sortorder=desc");
             is = Utils.openConnection(url);
             reader = new JsonReader(new InputStreamReader(is, "UTF-8"));
             try {

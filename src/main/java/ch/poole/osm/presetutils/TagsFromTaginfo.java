@@ -6,12 +6,8 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.cli.CommandLine;
@@ -21,8 +17,6 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-
-import ch.poole.osm.presetutils.ID2JOSM.ValueAndDescription;
 
 /**
  * Get tags from taginfo
@@ -37,35 +31,9 @@ import ch.poole.osm.presetutils.ID2JOSM.ValueAndDescription;
 
 public class TagsFromTaginfo {
 
-    private static final String             NOSUBTAGS         = "nosubtags";
-    private static final String             OUTPUT            = "output";
-    private static final String             MINIMUM           = "minimum";
-    /**
-     * An set of tags considered 'important'. These are typically tags that define real-world objects and not properties
-     * of such.
-     */
-    public static final Set<String>         OBJECT_KEYS       = Collections.unmodifiableSet(
-            new HashSet<>(Arrays.asList("aerialway", "aeroway", "amenity", "barrier", "boundary", "building", "craft", "emergency", "ford", "geological", "highway",
-                    "historic", "landuse", "leisure", "man_made", "military", "natural", "office", "place", "power", "public_transport", "railway", "shop",
-                    "tourism", "waterway", "type", "entrance", "pipeline", "healthcare", "playground", "attraction", "traffic_sign", "traffic_sign:forward",
-                    "traffic_sign:backward", "golf", "indoor", "cemetry", "building:part", "landcover", "advertising")));
-    public static final Map<String, String> SECOND_LEVEL_KEYS = new HashMap<>();
-    static {
-        SECOND_LEVEL_KEYS.put("vending_machine", "vending");
-        SECOND_LEVEL_KEYS.put("stadium", "sport");
-        SECOND_LEVEL_KEYS.put("pitch", "sport");
-        SECOND_LEVEL_KEYS.put("sports_centre", "sport");
-    }
-    public static final Map<String, String> KEYS_FOR_SPECIFIC_ELEMENT = new HashMap<>();
-    static {
-        KEYS_FOR_SPECIFIC_ELEMENT.put("type", "relations");
-    }
-    public static final Set<String> NOT_SECOND_LEVEL_KEYS = Collections
-            .unmodifiableSet(new HashSet<>(Arrays.asList("phone", "health", "census", "postal_code", "maxspeed", "designated", "heritage", "incline", "network",
-                    "level", "motorcycle", "bicycle", "snowmobile", "organic", "fireplace", "boat", "bar", "compressed_air", "swimming_pool", "taxi", "atm",
-                    "telephone", "waste_basket", "drinking_water", "restaurant", "sanitary_dump_station", "water_point", "biergarten", "bench", "give_way",
-                    "access", "noexit", "outdoor_seating", "goods", "second_hand", "atv", "tobacco", "household", "ski", "ice_cream", "vacant", "car",
-                    "fishing", "toilet", "shelter", "handrail", "monorail", "unisex", "private", "exit", "video", "window", "laundry", "table", "steps")));
+    private static final String NOSUBTAGS = "nosubtags";
+    private static final String OUTPUT    = "output";
+    private static final String MINIMUM   = "minimum";
 
     class TagStats {
         String tag   = null;
@@ -75,10 +43,10 @@ public class TagsFromTaginfo {
     List<TagStats> tags = new ArrayList<>();
 
     void dumpTags(PrintWriter pw, int minCount, boolean addSubTags) {
-        for (String object : OBJECT_KEYS) {
-            String filter = KEYS_FOR_SPECIFIC_ELEMENT.get(object); // normally == null == all elements
+        for (String object : Tags.OBJECT_KEYS) {
+            String filter = Tags.KEYS_FOR_SPECIFIC_ELEMENT.get(object); // normally == null == all elements
             List<ValueAndDescription> values = TagInfo.getOptionsFromTagInfo(object, filter, false, minCount, 0, false);
-            List<ValueAndDescription> combinationsList = TagInfo.getCombinationKeys(object, minCount / 5);
+            List<ValueAndDescription> combinationsList = TagInfo.getCombinationKeys(object, filter, minCount / 5);
             Set<String> combinations = new HashSet<>();
             if (combinationsList != null) {
                 for (ValueAndDescription combination : combinationsList) {
@@ -87,20 +55,26 @@ public class TagsFromTaginfo {
             }
             if (values != null && !values.isEmpty()) {
                 for (ValueAndDescription value : values) {
+                    if (Tags.NOT_OBJECT_KEY_VALUES.contains(value.value)) { // applies to top level keys too
+                        continue;
+                    }
                     TagStats stats = new TagStats();
                     stats.tag = object + "=" + value.value;
                     tags.add(stats);
+                    stats.count = value.count;
 
                     // handle sub keys
                     String subKey = value.value;
-                    if (SECOND_LEVEL_KEYS.containsKey(subKey)) {
-                        subKey = SECOND_LEVEL_KEYS.get(subKey);
+                    if (Tags.SECOND_LEVEL_KEYS.containsKey(value.value)) {
+                        subKey = Tags.SECOND_LEVEL_KEYS.get(value.value);
                     }
                     if (!combinations.contains(subKey)) { // do this after replacing subKey
                         System.out.println(subKey + " discarded because not in combinations for key " + object);
                         continue;
                     }
-                    if (NOT_SECOND_LEVEL_KEYS.contains(subKey) || OBJECT_KEYS.contains(subKey)) {
+                    boolean not2ndLevelKeysHasTag = Tags.NOT_SECOND_LEVEL_KEYS_2.containsKey(stats.tag);
+                    if (Tags.NOT_SECOND_LEVEL_KEYS.contains(subKey) || Tags.OBJECT_KEYS.contains(subKey)
+                            || (not2ndLevelKeysHasTag && Tags.NOT_SECOND_LEVEL_KEYS_2.get(stats.tag).contains(subKey))) {
                         System.out.println(subKey + " discarded because of manual discard, key " + object);
                         continue;
                     }
@@ -108,12 +82,19 @@ public class TagsFromTaginfo {
                         List<ValueAndDescription> subValues = TagInfo.getOptionsFromTagInfo(subKey, filter, false, minCount / 5, 0, false);
                         if (values != null) {
                             for (ValueAndDescription sub : subValues) {
-                                if ("yes".equals(sub.value) || "no".equals(sub.value)) { // these are in general
-                                                                                         // nonsense
+                                if (Tags.TEMP_KEYS.contains(subKey) && !values.contains(sub)) {
+                                    // the sub value may only be one of the top level values for this key
+                                    // example highway=construction, construction=primary
+                                    continue;
+                                }
+                                String subTag = subKey + "=" + sub.value;
+                                if (Tags.NOT_OBJECT_KEY_VALUES.contains(sub.value)
+                                        || (not2ndLevelKeysHasTag && Tags.NOT_SECOND_LEVEL_KEYS_2.get(stats.tag).contains(subTag))) {
                                     continue;
                                 }
                                 stats = new TagStats();
-                                stats.tag = object + "=" + value.value + " / " + subKey + "=" + sub.value;
+                                stats.tag = object + "=" + value.value + " / " + subTag;
+                                stats.count = Integer.min(sub.count, value.count);
                                 tags.add(stats);
                             }
                         }
@@ -127,7 +108,7 @@ public class TagsFromTaginfo {
         }
 
         for (TagStats s : tags) {
-            pw.print(s.tag + ",0\n");
+            pw.print(s.tag + "," + s.count + "\n");
         }
         pw.flush();
 

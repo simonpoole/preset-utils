@@ -10,7 +10,6 @@ import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -35,6 +34,8 @@ import org.xml.sax.helpers.DefaultHandler;
 /**
  * Parse a JOSM format preset file and generate some stats
  * 
+ * There is an underlying assumption that preset items will contain the most important / top-level tags first
+ * 
  * Some parts of this were nicked from Vespucci and some from Apache CLI sample code.
  * 
  * Licence Apache 2.0
@@ -46,18 +47,8 @@ import org.xml.sax.helpers.DefaultHandler;
 public class PresetStats {
 
     private static final String TAGINFO = "taginfo";
-    private static final String INPUT = "input";
-    private static final String OUTPUT = "output";
-    /**
-     * An set of tags considered 'important'. These are typically tags that define real-world objects and not properties
-     * of such.
-     */
-    public static final Set<String> OBJECT_KEYS       = Collections
-            .unmodifiableSet(new HashSet<>(Arrays.asList("highway", "barrier", "waterway", "railway", "aeroway", "aerialway", "power", "man_made", "building",
-                    "building:part", "leisure", "amenity", "office", "shop", "craft", "emergency", "tourism", "historic", "landuse", "military", "natural",
-                    "boundary", "place", "type", "entrance", "pipeline", "healthcare", "playground", "attraction", "public_transport", "traffic_sign",
-                    "traffic_sign:forward", "traffic_sign:backward", "golf", "indoor", "geological", "cemetry", "geological", "landcover")));
-    public static final Set<String> SECOND_LEVEL_KEYS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("vending", "sport")));
+    private static final String INPUT   = "input";
+    private static final String OUTPUT  = "output";
 
     class ItemStats {
         String                    tag        = null;
@@ -147,6 +138,10 @@ public class PresetStats {
                 String value = attr.getValue(VALUE);
                 uniqueKeys.add(key);
                 uniqueValues.add(value);
+                boolean isObjectKey = Tags.OBJECT_KEYS.contains(key);
+                if (isObjectKey && Tags.NOT_OBJECT_KEY_VALUES.contains(value)) {
+                    return; // these tend to be nonsense
+                }
                 if (current.tag == null) {
                     if (!keySeen) {
                         tagKey = key;
@@ -154,14 +149,21 @@ public class PresetStats {
                     }
                     current.tag = key + "=" + value;
                 } else {
-                    current.tag = current.tag + " / " + key + "=" + value;
+                    if (isObjectKey && !Tags.OBJECT_KEYS.contains(tagKey)) {
+                        current.tag = key + "=" + value + " / " + current.tag;
+                        tagKey = key;
+                        tagValue = value;
+                    } else {
+                        current.tag = current.tag + " / " + key + "=" + value;
+                    }
                 }
                 keySeen = true;
-                secondLevelKeySeen = key.equals(tagValue) || SECOND_LEVEL_KEYS.contains(key);
+                secondLevelKeySeen = key.equals(tagValue) || key.equals(Tags.SECOND_LEVEL_KEYS.get(key));
                 current.keyCount++;
                 current.valueCount++;
                 if (useTagInfo) {
-                    current.count = TagInfo.getTagCount(key, value);
+                    int tagInfoCount = TagInfo.getTagCount(key, value);
+                    current.count = current.count > 0 ? Integer.min(current.count, tagInfoCount) : tagInfoCount;
                 }
             } else if (TEXT.equals(qName)) {
                 String key = attr.getValue(KEY);
@@ -192,23 +194,26 @@ public class PresetStats {
                 String delimiter = attr.getValue(DELIMITER);
                 String valuesString = attr.getValue(VALUES);
                 expandedItems = null;
-                expandCombo = !secondLevelKeySeen && keySeen && (comboKey.equals(tagValue) || SECOND_LEVEL_KEYS.contains(comboKey));
-                if ((!keySeen && OBJECT_KEYS.contains(comboKey)) || expandCombo) {
-                    expandedItems = new HashMap<>();
+                expandCombo = !secondLevelKeySeen && keySeen && (comboKey.equals(tagValue) || comboKey.equals(Tags.SECOND_LEVEL_KEYS.get(tagValue)));
+                if ((!keySeen && Tags.OBJECT_KEYS.contains(comboKey)) || expandCombo) {
+                    expandedItems = new HashMap<>(); // this double as a flag if the combo should be considered at all
                 }
                 if (valuesString != null) {
                     String[] values = valuesString.split(delimiter != null ? delimiter : (MULTISELECT.equals(qName) ? ";" : ","));
                     if (expandedItems != null) {
                         for (String v : values) {
-                            ItemStats s = new ItemStats();
-                            s.name = comboKey + "=" + v;
-                            s.tag = s.name;
-                            if (expandCombo) {
-                                s.tag = tagKey + "=" + tagValue + " / " + s.tag;
-                            }
-                            expandedItems.put(s.tag, s);
-                            if (useTagInfo) {
-                                s.count = TagInfo.getTagCount(key, v);
+                            if (!Tags.NOT_OBJECT_KEY_VALUES.contains(v)) {
+                                ItemStats s = new ItemStats();
+                                s.name = comboKey + "=" + v;
+                                s.tag = s.name;
+                                if (expandCombo) {
+                                    s.tag = tagKey + "=" + tagValue + " / " + s.tag;
+                                }
+                                expandedItems.put(s.tag, s);
+                                if (useTagInfo) {
+                                    int tagInfoCount = TagInfo.getTagCount(key, v);
+                                    s.count = current.count > 0 ? Integer.min(current.count, tagInfoCount) : tagInfoCount;
+                                }
                             }
                         }
                     } else {
@@ -230,12 +235,10 @@ public class PresetStats {
                     if (keySeen && expandedItems == null && chunk.chunkTags != null) {
                         List<String> chunkValues = chunk.chunkTags.get(tagValue);
                         if (chunkValues == null) {
-                            for (String comboKey : SECOND_LEVEL_KEYS) {
-                                chunkValues = chunk.chunkTags.get(comboKey);
-                                if (chunkValues != null) {
-                                    subKey = comboKey;
-                                    break;
-                                }
+                            String comboKey = Tags.SECOND_LEVEL_KEYS.get(tagValue);
+                            chunkValues = chunk.chunkTags.get(comboKey);
+                            if (chunkValues != null) {
+                                subKey = comboKey;
                             }
                         }
                         if (chunkValues != null) {
@@ -247,7 +250,8 @@ public class PresetStats {
                                 s.tag = tagKey + "=" + tagValue + " / " + s.tag;
                                 expandedItems.put(s.tag, s);
                                 if (useTagInfo) {
-                                    s.count = TagInfo.getTagCount(tagValue, v);
+                                    int tagInfoCount = TagInfo.getTagCount(tagValue, v);
+                                    s.count = current.count > 0 ? Integer.min(current.count, tagInfoCount) : tagInfoCount;
                                 }
                             }
                             items.putAll(expandedItems);
@@ -262,7 +266,7 @@ public class PresetStats {
                     } else {
                         if (chunk.tag != null) {
                             String[] c = chunk.tag.split("=");
-                            if (OBJECT_KEYS.contains(c[0])) { // hack alert
+                            if (Tags.OBJECT_KEYS.contains(c[0])) { // hack alert
                                 if (current.tag != null) {
                                     current.tag = chunk.tag + " / " + current.tag;
                                 } else {
@@ -285,7 +289,8 @@ public class PresetStats {
                     }
                     expandedItems.put(s.name, s);
                     if (useTagInfo) {
-                        s.count = TagInfo.getTagCount(comboKey, value);
+                        int tagInfoCount = TagInfo.getTagCount(comboKey, value);
+                        s.count = current.count > 0 ? Integer.min(current.count, tagInfoCount) : tagInfoCount;
                     }
                 } else {
                     current.valueCount++;
@@ -313,9 +318,7 @@ public class PresetStats {
                 inOptional = false;
             } else if (!inOptional) {
                 if (ITEM.equals(qName)) {
-                    if (expandedItems == null) {
-                        items.put(current.tag, current);
-                    }
+                    items.put(current.tag, current);
                     current = null;
                     expandedItems = null;
                 } else if (CHUNK.equals(qName)) {
