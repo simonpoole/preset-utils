@@ -7,7 +7,6 @@
     <xsl:template match="@exclude_regions" />
     <xsl:template match="@long_text" />
     <xsl:template match="@i18n" />
-    <xsl:template match="@javascript" />
     <xsl:template match="@value_type" />
     <xsl:template match="m:key/@values_context" />
     <xsl:template match="m:key/@text" />
@@ -15,6 +14,8 @@
     <xsl:template match="m:checkgroup/@text" />
     <xsl:template match="m:checkgroup/@text_context" />
     <xsl:template match="m:group/@items_sort" />
+    <!-- this removes the whole item -->
+    <xsl:template match="*[m:text[@javascript]]" />
     <!--identity template copies everything forward by default-->
     <xsl:template match="@*|node()">
         <xsl:copy>
