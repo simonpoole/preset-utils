@@ -3,6 +3,7 @@
 	xmlns:m="http://josm.openstreetmap.de/tagging-preset-1.0" >
     <!--empty template suppresses attributes-->
     <xsl:template match="@deprecated" />
+    <xsl:template match="@autoapply" />
     <xsl:template match="@regions" />
     <xsl:template match="@exclude_regions" />
     <xsl:template match="@long_text" />
