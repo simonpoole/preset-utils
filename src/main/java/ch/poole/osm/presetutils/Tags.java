@@ -16,7 +16,7 @@ public class Tags {
             "boundary", "building", "craft", "emergency", "ford", "geological", "highway", "historic", "landuse", "leisure", "man_made", "military", "natural",
             "office", "place", "power", "public_transport", "railway", "shop", "tourism", "waterway", "type", "entrance", "pipeline", "healthcare",
             "playground", "attraction", "traffic_sign", "traffic_sign:forward", "traffic_sign:backward", "golf", "indoor", "cemetry", "building:part",
-            "landcover", "advertising", "traffic_calming", "club", "cemetery", "police")));
+            "landcover", "advertising", "traffic_calming", "club", "cemetery", "police", "telecom")));
 
     /**
      * Special keys that are used to indicate a special mostly temporary state
