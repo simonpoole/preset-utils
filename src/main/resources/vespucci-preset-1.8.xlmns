@@ -319,10 +319,15 @@
     </simpleType>
 
     <complexType name="roles">
-        <sequence>
-            <element name="role" type="tns:role" minOccurs="1" maxOccurs="unbounded" />
-        </sequence>
+        <group ref="tns:roles_elements" maxOccurs="unbounded" />
     </complexType>
+
+    <group name="roles_elements">
+        <choice>
+            <element name="role" type="tns:role" minOccurs="1" maxOccurs="unbounded" />
+            <element name="reference" type="tns:reference" />
+        </choice>
+    </group>
 
     <complexType name="role">
         <attribute name="key" type="string" />
