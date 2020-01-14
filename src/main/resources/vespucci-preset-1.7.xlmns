@@ -28,7 +28,8 @@
                 <attribute name="description" type="string" />
                 <attribute name="link" type="string" />
                 <attribute name="baselanguage" type="string" />
-
+				<attribute name="object_keys" type="string" />
+				
                 <anyAttribute processContents="skip" />
             </extension>
         </complexContent>
@@ -44,6 +45,7 @@
             </choice>
         </sequence>
         <attribute name="icon" type="string" />
+        <attribute name="items_sort" type="string" />
 
         <attribute name="type" use="prohibited" />
         <attribute name="text" use="prohibited" />
@@ -54,6 +56,8 @@
         <complexContent>
             <extension base="tns:group-parent">
                 <attribute name="name" type="string" use="required" />
+                <attribute name="regions" type="string" />
+                <attribute name="exclude_regions" type="boolean"/>
             </extension>
         </complexContent>
     </complexType>
@@ -75,7 +79,10 @@
         <attribute name="name_template" type="string"/>
         <attribute name="name_template_filter" type="string"/>
         <attribute name="preset_name_label" type="boolean"/>
-
+        <attribute name="deprecated" type="boolean"/>
+        <attribute name="regions" type="string" />
+        <attribute name="exclude_regions" type="boolean"/>
+        <attribute name="autoapply" type="boolean"/>
         <attribute name="text" use="prohibited" />
         <anyAttribute processContents="skip" />
     </complexType>
@@ -93,8 +100,8 @@
                     <group ref="tns:optional_elements" />
                     <element name="key" type="tns:key" />
                     <element name="optional" type="tns:optional" minOccurs="0" />
-                    <element name="roles" type="tns:roles" minOccurs="0" />
                 </choice>
+                <element name="roles" type="tns:roles" minOccurs="0" maxOccurs="1" />
             </sequence>
             <sequence>
                 <!-- Cannot use tns:list_elements here because reference is present both in optional_elements and list_elements
@@ -140,11 +147,14 @@
         <attribute name="key" type="string" use="required" />
         <attribute name="value" type="string" />
         <attribute name="match" type="string" />
+        <attribute name="text" type="string" />
+        <attribute name="values_context" type="string" />
     </complexType>
 
     <complexType name="link">
-        <attribute name="wiki" type="string" />
+        <!-- this should use an assertion to check that either href or wiki is present -->
         <attribute name="href" type="string" />
+        <attribute name="wiki" type="string" />
         <attribute name="text" type="string" />
         <attribute name="text_context" type="string" />
 
@@ -179,6 +189,8 @@
         <attribute name="match" type="tns:match" />
         <attribute name="length" type="positiveInteger" />
         <attribute name="alternative_autocomplete_keys" type="string" />
+        <attribute name="javascript" type="string" />
+        <attribute name="value_type" type="tns:value_type" />
 
         <attribute name="type" use="prohibited" />
         <attribute name="name" use="prohibited" />
@@ -260,6 +272,8 @@
             </choice>
         </sequence>
         <attribute name="columns" type="positiveInteger" />
+        <attribute name="text" type="string" />
+        <attribute name="text_context" type="string" />
         <anyAttribute processContents="skip" />
     </complexType>
 
@@ -272,8 +286,6 @@
         <attribute name="value_off" type="string" />
         <attribute name="disable_off" type="boolean" />
         <attribute name="match" type="tns:match" />
-        <attribute name="icon" type="string" />
-        <attribute name="icon_size" type="integer" />
 
         <attribute name="name" use="prohibited" />
         <attribute name="type" use="prohibited" />
@@ -307,15 +319,10 @@
     </simpleType>
 
     <complexType name="roles">
-        <group ref="tns:roles_elements" maxOccurs="unbounded" />
-    </complexType>
-
-    <group name="roles_elements">
-        <choice>
+        <sequence>
             <element name="role" type="tns:role" minOccurs="1" maxOccurs="unbounded" />
-            <element name="reference" type="tns:reference" />
-        </choice>
-    </group>
+        </sequence>
+    </complexType>
 
     <complexType name="role">
         <attribute name="key" type="string" />
@@ -336,4 +343,17 @@
         </restriction>
     </simpleType>
 
+	<simpleType name="value_type">
+    	<restriction base="string">
+            <enumeration value="opening_hours" />
+            <enumeration value="opening_hours_plus" />
+            <enumeration value="conditional" />
+            <enumeration value="integer" />
+            <enumeration value="website" />
+            <enumeration value="phone" />
+            <enumeration value="wikipedia" />
+            <enumeration value="wikidata" />
+        </restriction>
+    </simpleType>
+    
 </schema>
