@@ -15,6 +15,7 @@
     <xsl:template match="m:checkgroup/@text" />
     <xsl:template match="m:checkgroup/@text_context" />
     <xsl:template match="m:group/@items_sort" />
+    <xsl:template match="m:item/@min_match" />
     <!-- this removes the whole item -->
     <xsl:template match="*[m:text[@javascript]]" />
     <!--identity template copies everything forward by default-->
