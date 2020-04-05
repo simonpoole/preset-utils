@@ -153,6 +153,15 @@ public class PresetStats {
                         current.tag = key + "=" + value + " / " + current.tag;
                         tagKey = key;
                         tagValue = value;
+                    } else if (isObjectKey && Tags.OBJECT_KEYS.contains(tagKey)) {
+                        // both keys are object keys, sort alphabetically
+                        if (tagKey.compareTo(key) > 0) {
+                            current.tag = key + "=" + value + " / " + current.tag;
+                            tagKey = key;
+                            tagValue = value;
+                        } else {
+                            current.tag = current.tag + " / " + key + "=" + value;
+                        }
                     } else {
                         current.tag = current.tag + " / " + key + "=" + value;
                     }

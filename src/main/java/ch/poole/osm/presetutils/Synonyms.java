@@ -195,7 +195,7 @@ public class Synonyms {
         isServerGzipEnabled = "gzip".equals(con.getHeaderField("Content-encoding"));
 
         if (con.getResponseCode() != HttpURLConnection.HTTP_OK) {
-            throw new IOException("Got " + con.getResponseMessage());
+            throw new IOException("Synonyms got " + con.getResponseMessage());
         }
 
         if (isServerGzipEnabled) {

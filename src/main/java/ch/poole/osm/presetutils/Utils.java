@@ -36,7 +36,7 @@ public class Utils {
         isServerGzipEnabled = "gzip".equals(con.getHeaderField("Content-encoding"));
 
         if (con.getResponseCode() != HttpURLConnection.HTTP_OK) {
-            throw new IOException("Got " + con.getResponseMessage());
+            throw new IOException("openConnection got " + con.getResponseCode() + " " + con.getResponseMessage() + " for " + url);
         }
 
         if (isServerGzipEnabled) {

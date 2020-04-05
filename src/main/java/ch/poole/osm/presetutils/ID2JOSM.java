@@ -57,7 +57,7 @@ public class ID2JOSM {
     };
 
     enum FieldType {
-        TEXT, NUMBER, LOCALIZED, TEL, EMAIL, URL, TEXTAREA, COMBO, TYPECOMBO, MULTICOMBO, NETWORKCOMBO, SEMICOMBO, CHECK, DEFAULTCHECK, ONEWAYCHECK, RADIO, STRUCTURERADIO, ACCESS, ADDRESS, CYCLEWAY, MAXSPEED, RESTRICTIONS, WIKIPEDIA, WIKIDATA
+        TEXT, NUMBER, LOCALIZED, TEL, EMAIL, URL, TEXTAREA, COMBO, TYPECOMBO, MULTICOMBO, NETWORKCOMBO, SEMICOMBO, CHECK, DEFAULTCHECK, ONEWAYCHECK, RADIO, STRUCTURERADIO, ACCESS, ADDRESS, CYCLEWAY, MAXSPEED, RESTRICTIONS, WIKIPEDIA, WIKIDATA, IDENTIFIER
     };
 
     static class Field {
@@ -65,7 +65,7 @@ public class ID2JOSM {
         String                                 label;
         List<ValueAndDescription>              keys;
         FieldType                              fieldType;
-        Geometry                               geometry;
+        List<Geometry>                         geometry;
         boolean                                universal     = false;
         String                                 defaultValue;
         String                                 placeHolder;
@@ -93,6 +93,7 @@ public class ID2JOSM {
             case RESTRICTIONS:
             case WIKIPEDIA:
             case WIKIDATA:
+            case IDENTIFIER:
                 if (keys != null) {
                     for (ValueAndDescription key : keys) {
                         indent(writer, baseIndent);
@@ -121,8 +122,8 @@ public class ID2JOSM {
                                 optionsComment(writer, baseIndent);
                                 String taginfoFilter = null;
                                 if (currentGeoms == null) {
-                                    if (geometry != null) {
-                                        taginfoFilter = geometry.toTagInfo();
+                                    if (geometry != null && !geometry.isEmpty()) {
+                                        taginfoFilter = geometry.get(0).toTagInfo(); // FIXME
                                     }
                                 } else if (currentGeoms.size() == 1) {
                                     taginfoFilter = currentGeoms.get(0).toTagInfo();
@@ -461,117 +462,123 @@ public class ID2JOSM {
         try {
             // field definitions read 1st
             // https://raw.githubusercontent.com/openstreetmap/iD/master/data/presets/fields.json
-            URL url = new URL("https://raw.githubusercontent.com/openstreetmap/iD/master/data/presets/fields.json");
+            // URL url = new URL("https://raw.githubusercontent.com/openstreetmap/iD/master/data/presets/fields.json");
+            URL url = new URL("https://github.com/openstreetmap/iD/raw/develop/data/presets/fields.json");
             is = Utils.openConnection(url);
             reader = new JsonReader(new InputStreamReader(is, "UTF-8"));
             try {
                 reader.beginObject();
-                if (reader.hasNext()) {
+                // if (reader.hasNext()) {
+                // String jsonName = reader.nextName();
+                // if ("fields".equals(jsonName)) {
+                // reader.beginObject();
+                while (reader.hasNext()) {
                     String jsonName = reader.nextName();
-                    if ("fields".equals(jsonName)) {
-                        reader.beginObject();
-                        while (reader.hasNext()) {
-                            jsonName = reader.nextName();
-                            Field current = new Field();
-                            fields.put(jsonName, current);
-                            current.name = jsonName;
-                            fieldKeys.put(current, jsonName);
+                    Field current = new Field();
+                    fields.put(jsonName, current);
+                    current.name = jsonName;
+                    fieldKeys.put(current, jsonName);
+                    reader.beginObject();
+                    while (reader.hasNext()) {
+                        switch (reader.nextName()) {
+                        case "label":
+                            current.label = reader.nextString();
+                            break;
+                        case "type":
+                            current.fieldType = FieldType.valueOf(reader.nextString().toUpperCase());
+                            break;
+                        case "default":
+                            current.defaultValue = reader.nextString();
+                            break;
+                        case "geometry":
+                            reader.beginArray();
+                            current.geometry = new ArrayList<>();
+                            while (reader.hasNext()) {
+                                current.geometry.add(Geometry.valueOf(reader.nextString().toUpperCase()));
+                            }
+                            reader.endArray();
+                            break;
+                        case "key":
+                            current.keys = new ArrayList<>();
+                            ValueAndDescription key = new ValueAndDescription();
+                            key.value = reader.nextString();
+                            current.keys.add(key);
+                            break;
+                        case "keys":
+                            reader.beginArray();
+                            current.keys = new ArrayList<>();
+                            while (reader.hasNext()) {
+                                key = new ValueAndDescription();
+                                key.value = reader.nextString();
+                                current.keys.add(key);
+                            }
+                            reader.endArray();
+                            break;
+                        case "options":
+                            reader.beginArray();
+                            current.options = new ArrayList<>();
+                            while (reader.hasNext()) {
+                                ValueAndDescription value = new ValueAndDescription();
+                                value.value = reader.nextString();
+                                current.options.add(value);
+                            }
+                            reader.endArray();
+                            break;
+                        case "caseSensitive":
+                            current.caseSensitive = reader.nextBoolean();
+                            break;
+                        case "snake_case":
+                            current.snakeCase = reader.nextBoolean();
+                            break;
+                        case "strings":
                             reader.beginObject();
                             while (reader.hasNext()) {
-                                switch (reader.nextName()) {
-                                case "label":
-                                    current.label = reader.nextString();
-                                    break;
-                                case "type":
-                                    current.fieldType = FieldType.valueOf(reader.nextString().toUpperCase());
-                                    break;
-                                case "default":
-                                    current.defaultValue = reader.nextString();
-                                    break;
-                                case "geometry":
-                                    current.geometry = Geometry.valueOf(reader.nextString().toUpperCase());
-                                    break;
-                                case "key":
-                                    current.keys = new ArrayList<>();
-                                    ValueAndDescription key = new ValueAndDescription();
-                                    key.value = reader.nextString();
-                                    current.keys.add(key);
-                                    break;
-                                case "keys":
-                                    reader.beginArray();
-                                    current.keys = new ArrayList<>();
-                                    while (reader.hasNext()) {
-                                        key = new ValueAndDescription();
-                                        key.value = reader.nextString();
-                                        current.keys.add(key);
-                                    }
-                                    reader.endArray();
-                                    break;
-                                case "options":
-                                    reader.beginArray();
+                                jsonName = reader.nextName();
+                                if ("options".equals(jsonName)) {
                                     current.options = new ArrayList<>();
-                                    while (reader.hasNext()) {
-                                        ValueAndDescription value = new ValueAndDescription();
-                                        value.value = reader.nextString();
-                                        current.options.add(value);
-                                    }
-                                    reader.endArray();
-                                    break;
-                                case "caseSensitive":
-                                    current.caseSensitive = reader.nextBoolean();
-                                    break;
-                                case "snake_case":
-                                    current.snakeCase = reader.nextBoolean();
-                                    break;
-                                case "strings":
                                     reader.beginObject();
                                     while (reader.hasNext()) {
-                                        jsonName = reader.nextName();
-                                        if ("options".equals(jsonName)) {
-                                            current.options = new ArrayList<>();
+                                        String value = reader.nextName();
+                                        ValueAndDescription v = new ValueAndDescription();
+                                        v.value = value;
+                                        JsonToken t = reader.peek();
+                                        if (JsonToken.STRING.equals(t)) {
+                                            v.description = reader.nextString();
+                                        } else if (JsonToken.BEGIN_OBJECT.equals(t)) {
                                             reader.beginObject();
                                             while (reader.hasNext()) {
-                                                String value = reader.nextName();
-                                                ValueAndDescription v = new ValueAndDescription();
-                                                v.value = value;
-                                                JsonToken t = reader.peek();
-                                                if (JsonToken.STRING.equals(t)) {
+                                                jsonName = reader.nextName();
+                                                if ("title".equals(jsonName)) {
                                                     v.description = reader.nextString();
-                                                } else if (JsonToken.BEGIN_OBJECT.equals(t)) {
-                                                    reader.beginObject();
-                                                    while (reader.hasNext()) {
-                                                        jsonName = reader.nextName();
-                                                        if ("title".equals(jsonName)) {
-                                                            v.description = reader.nextString();
-                                                        } else {
-                                                            reader.skipValue();
-                                                        }
-                                                    }
-                                                    reader.endObject();
                                                 } else {
                                                     reader.skipValue();
-                                                    continue;
                                                 }
-                                                current.options.add(v);
                                             }
                                             reader.endObject();
                                         } else {
                                             reader.skipValue();
+                                            continue;
                                         }
+                                        current.options.add(v);
                                     }
                                     reader.endObject();
-                                    break;
-                                default:
+                                } else {
                                     reader.skipValue();
                                 }
                             }
                             reader.endObject();
+                            break;
+                        default:
+                            reader.skipValue();
                         }
-                        reader.endObject();
-                    } else {
-                        reader.skipValue();
                     }
+                    reader.endObject();
                 }
+                // reader.endObject();
+                // } else {
+                // reader.skipValue();
+                // }
+                // }
                 reader.endObject();
             } catch (IOException e) {
                 System.out.println(e.getMessage());
@@ -579,170 +586,171 @@ public class ID2JOSM {
 
             // presets def
             // "https://raw.githubusercontent.com/openstreetmap/iD/master/data/presets/presets.json"
-            url = new URL("https://raw.githubusercontent.com/openstreetmap/iD/master/data/presets/presets.json");
+            // url = new URL("https://raw.githubusercontent.com/openstreetmap/iD/master/data/presets/presets.json");
+            url = new URL("https://github.com/openstreetmap/iD/raw/develop/data/presets/presets.json");
             is = Utils.openConnection(url);
             reader = new JsonReader(new InputStreamReader(is, "UTF-8"));
             try {
                 reader.beginObject();
-                if (reader.hasNext()) {
+                // if (reader.hasNext()) {
+                // String jsonName = reader.nextName();
+                // if ("presets".equals(jsonName)) {
+                // reader.beginObject();
+                while (reader.hasNext()) {
                     String jsonName = reader.nextName();
-                    if ("presets".equals(jsonName)) {
-                        reader.beginObject();
-                        while (reader.hasNext()) {
-                            jsonName = reader.nextName();
-                            Item current = new Item();
-                            current.path = jsonName;
+                    Item current = new Item();
+                    current.path = jsonName;
+                    reader.beginObject();
+                    boolean save = true;
+                    while (reader.hasNext()) {
+                        switch (reader.nextName()) {
+                        case "name":
+                            current.name = reader.nextString();
+                            break;
+                        case "searchable":
+                            current.searchable = reader.nextBoolean();
+                            break;
+                        case "tags":
                             reader.beginObject();
-                            boolean save = true;
+                            current.tags = new ArrayList<>();
                             while (reader.hasNext()) {
-                                switch (reader.nextName()) {
-                                case "name":
-                                    current.name = reader.nextString();
-                                    break;
-                                case "searchable":
-                                    current.searchable = reader.nextBoolean();
-                                    break;
-                                case "tags":
-                                    reader.beginObject();
-                                    current.tags = new ArrayList<>();
-                                    while (reader.hasNext()) {
-                                        Tag tag = new Tag();
-                                        tag.key = reader.nextName();
-                                        tag.value = reader.nextString();
-                                        current.tags.add(tag);
-                                        if (("name".equals(tag.key) || "brand:wikidata".equals(tag.key)) && tag.value != null && !"".equals(tag.value)) {
-                                            save = false; // this removes entries generated from the name suggestion
-                                                          // index
-                                        }
-                                    }
-                                    reader.endObject();
-                                    break;
-                                case "addTags":
-                                    reader.beginObject();
-                                    current.addTags = new ArrayList<>();
-                                    while (reader.hasNext()) {
-                                        Tag tag = new Tag();
-                                        tag.key = reader.nextName();
-                                        tag.value = reader.nextString();
-                                        current.addTags.add(tag);
-                                    }
-                                    reader.endObject();
-                                    break;
-                                case "removeTags":
-                                    reader.beginObject();
-                                    current.removeTags = new ArrayList<>();
-                                    while (reader.hasNext()) {
-                                        Tag tag = new Tag();
-                                        tag.key = reader.nextName();
-                                        tag.value = reader.nextString();
-                                        current.removeTags.add(tag);
-                                    }
-                                    reader.endObject();
-                                    break;
-                                case "geometry":
-                                    reader.beginArray();
-                                    current.geometries = new ArrayList<>();
-                                    while (reader.hasNext()) {
-                                        current.geometries.add(Geometry.valueOf(reader.nextString().toUpperCase()));
-                                    }
-                                    reader.endArray();
-                                    break;
-                                case "fields":
-                                    reader.beginArray();
-                                    current.fields = new ArrayList<Field>();
-                                    List<String> tagKeys = current.tagKeys();
-                                    while (reader.hasNext()) {
-                                        String fieldName = reader.nextString();
-                                        addFields(current.fields, tagKeys, fieldName);
-                                    }
-                                    reader.endArray();
-                                    break;
-                                case "moreFields":
-                                    reader.beginArray();
-                                    current.moreFields = new ArrayList<Field>();
-                                    tagKeys = current.tagKeys();
-                                    while (reader.hasNext()) {
-                                        String fieldName = reader.nextString();
-                                        addFields(current.moreFields, tagKeys, fieldName);
-                                    }
-                                    reader.endArray();
-                                    break;
-                                case "reference":
-                                    reader.beginObject();
-                                    current.reference = new Tag();
-                                    while (reader.hasNext()) {
-                                        switch (reader.nextName()) {
-                                        case "key":
-                                            current.reference.key = reader.nextString();
-                                            break;
-                                        case "value":
-                                            current.reference.value = reader.nextString();
-                                            break;
-                                        }
-                                    }
-                                    reader.endObject();
-                                    break;
-                                case "matchScore":
-                                case "countryCodes":
-                                case "replacement":
-                                case "icon":
-                                case "imageURL":
-                                case "terms":
-                                default:
-                                    reader.skipValue();
-                                }
-                            }
-                            if (save) {
-                                items.put(current.path, current);
-                                if ((current.fields == null || current.fields.isEmpty()) && (current.moreFields == null || current.moreFields.isEmpty())) {
-                                    // implicit inheritance
-                                    int lastSlash = current.path.lastIndexOf('/');
-                                    if (lastSlash > 0) {
-                                        String parentPath = current.path.substring(0, lastSlash);
-                                        Item parent = items.get(parentPath);
-                                        if (parent != null) {
-                                            List<String> tagKeys = current.tagKeys();
-                                            current.fields = new ArrayList<>();
-                                            if (parent.fields != null) {
-                                                for (Field f : parent.fields) {
-                                                    addFields(current.fields, tagKeys, f.name);
-                                                }
-                                            }
-                                            if (parent.moreFields != null) {
-                                                current.moreFields = new ArrayList<>();
-                                                for (Field f : parent.moreFields) {
-                                                    addFields(current.moreFields, tagKeys, f.name);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                // remove duplicate tags/fields, can't do this before parsing the item is finished
-                                if (current.tags != null && current.fields != null) {
-                                    for (Tag t : new ArrayList<>(current.tags)) {
-                                        for (Field f : new ArrayList<>(current.fields)) {
-                                            for (ValueAndDescription vad : f.keys) {
-                                                if (vad.value.equals(t.key)) {
-                                                    if ("*".equals(t.value)) {
-                                                        current.tags.remove(t); // remove the tag
-                                                    } else {
-                                                        // we can't actually check against the values here as the
-                                                        // taginfo queries haven't run yet
-                                                        current.fields.remove(f); // remove field
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
+                                Tag tag = new Tag();
+                                tag.key = reader.nextName();
+                                tag.value = reader.nextString();
+                                current.tags.add(tag);
+                                if (("name".equals(tag.key) || "brand:wikidata".equals(tag.key)) && tag.value != null && !"".equals(tag.value)) {
+                                    save = false; // this removes entries generated from the name suggestion
+                                                  // index
                                 }
                             }
                             reader.endObject();
+                            break;
+                        case "addTags":
+                            reader.beginObject();
+                            current.addTags = new ArrayList<>();
+                            while (reader.hasNext()) {
+                                Tag tag = new Tag();
+                                tag.key = reader.nextName();
+                                tag.value = reader.nextString();
+                                current.addTags.add(tag);
+                            }
+                            reader.endObject();
+                            break;
+                        case "removeTags":
+                            reader.beginObject();
+                            current.removeTags = new ArrayList<>();
+                            while (reader.hasNext()) {
+                                Tag tag = new Tag();
+                                tag.key = reader.nextName();
+                                tag.value = reader.nextString();
+                                current.removeTags.add(tag);
+                            }
+                            reader.endObject();
+                            break;
+                        case "geometry":
+                            reader.beginArray();
+                            current.geometries = new ArrayList<>();
+                            while (reader.hasNext()) {
+                                current.geometries.add(Geometry.valueOf(reader.nextString().toUpperCase()));
+                            }
+                            reader.endArray();
+                            break;
+                        case "fields":
+                            reader.beginArray();
+                            current.fields = new ArrayList<Field>();
+                            List<String> tagKeys = current.tagKeys();
+                            while (reader.hasNext()) {
+                                String fieldName = reader.nextString();
+                                addFields(current.fields, tagKeys, fieldName);
+                            }
+                            reader.endArray();
+                            break;
+                        case "moreFields":
+                            reader.beginArray();
+                            current.moreFields = new ArrayList<Field>();
+                            tagKeys = current.tagKeys();
+                            while (reader.hasNext()) {
+                                String fieldName = reader.nextString();
+                                addFields(current.moreFields, tagKeys, fieldName);
+                            }
+                            reader.endArray();
+                            break;
+                        case "reference":
+                            reader.beginObject();
+                            current.reference = new Tag();
+                            while (reader.hasNext()) {
+                                switch (reader.nextName()) {
+                                case "key":
+                                    current.reference.key = reader.nextString();
+                                    break;
+                                case "value":
+                                    current.reference.value = reader.nextString();
+                                    break;
+                                }
+                            }
+                            reader.endObject();
+                            break;
+                        case "matchScore":
+                        case "countryCodes":
+                        case "replacement":
+                        case "icon":
+                        case "imageURL":
+                        case "terms":
+                        default:
+                            reader.skipValue();
                         }
-                        reader.endObject();
-                    } else {
-                        reader.skipValue();
                     }
+                    if (save) {
+                        items.put(current.path, current);
+                        if ((current.fields == null || current.fields.isEmpty()) && (current.moreFields == null || current.moreFields.isEmpty())) {
+                            // implicit inheritance
+                            int lastSlash = current.path.lastIndexOf('/');
+                            if (lastSlash > 0) {
+                                String parentPath = current.path.substring(0, lastSlash);
+                                Item parent = items.get(parentPath);
+                                if (parent != null) {
+                                    List<String> tagKeys = current.tagKeys();
+                                    current.fields = new ArrayList<>();
+                                    if (parent.fields != null) {
+                                        for (Field f : parent.fields) {
+                                            addFields(current.fields, tagKeys, f.name);
+                                        }
+                                    }
+                                    if (parent.moreFields != null) {
+                                        current.moreFields = new ArrayList<>();
+                                        for (Field f : parent.moreFields) {
+                                            addFields(current.moreFields, tagKeys, f.name);
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        // remove duplicate tags/fields, can't do this before parsing the item is finished
+                        if (current.tags != null && current.fields != null) {
+                            for (Tag t : new ArrayList<>(current.tags)) {
+                                for (Field f : new ArrayList<>(current.fields)) {
+                                    for (ValueAndDescription vad : f.keys) {
+                                        if (vad.value.equals(t.key)) {
+                                            if ("*".equals(t.value)) {
+                                                current.tags.remove(t); // remove the tag
+                                            } else {
+                                                // we can't actually check against the values here as the
+                                                // taginfo queries haven't run yet
+                                                current.fields.remove(f); // remove field
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    reader.endObject();
                 }
+                // reader.endObject();
+                // } else {
+                // reader.skipValue();
+                // }
+                // }
                 reader.endObject();
 
                 // print out

@@ -34,7 +34,7 @@ import org.apache.commons.cli.ParseException;
 
 public class MergePresetStats {
 
-    private static final String INPUT = "input";
+    private static final String INPUT  = "input";
     private static final String OUTPUT = "output";
 
     public static void main(String[] args) {
@@ -78,7 +78,7 @@ public class MergePresetStats {
             Map<String, boolean[]> mergedStats = new HashMap<>();
             Map<String, Integer> mergedCounts = new HashMap<>();
             for (int i = 0; i < input.length; i++) {
-                
+
                 List<String> list = null;
                 try {
                     list = Files.readAllLines(Paths.get(input[i]), StandardCharsets.UTF_8);
@@ -96,8 +96,13 @@ public class MergePresetStats {
                     }
                     stats[i] = true;
                     Integer count = mergedCounts.get(v[0]);
-                    if (count == null || Integer.valueOf(v[1]) > count) {
-                        mergedCounts.put(v[0], Integer.valueOf(v[1]));
+                    try {
+                        Integer countValue = Integer.valueOf(v[1]);
+                        if (count == null || countValue > count) {
+                            mergedCounts.put(v[0], countValue);
+                        }
+                    } catch (Exception e) {
+                        System.out.println(e.getMessage());
                     }
                 }
             }
