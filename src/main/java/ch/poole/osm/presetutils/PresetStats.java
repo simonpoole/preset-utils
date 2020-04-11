@@ -46,9 +46,10 @@ import org.xml.sax.helpers.DefaultHandler;
 
 public class PresetStats {
 
-    private static final String TAGINFO = "taginfo";
-    private static final String INPUT   = "input";
-    private static final String OUTPUT  = "output";
+    private static final String TAGINFO          = "taginfo";
+    private static final String INPUT            = "input";
+    private static final String OUTPUT           = "output";
+    private static final String IGNOREDEPRECATED = "ignoredeprecated";
 
     class ItemStats {
         String                    tag        = null;
@@ -88,6 +89,7 @@ public class PresetStats {
         private static final String REF                = "ref";
         private static final String LIST_ENTRY         = "list_entry";
         private static final String VALUE              = "value";
+        private static final String DEPRECATED_ATTR    = "deprecated";
         ItemStats                   current            = null;
         boolean                     keySeen            = false;
         boolean                     secondLevelKeySeen = false;
@@ -95,15 +97,18 @@ public class PresetStats {
         String                      tagKey             = null;
         String                      tagValue           = null;
         Map<String, ItemStats>      chunks             = new HashMap<>();
+        boolean                     deprecated         = false;
 
         String  comboKey;
         boolean inOptional  = false;
         boolean expandCombo = false;
 
         final boolean useTagInfo;
+        final boolean ignoreDeprecated;
 
-        public MyHandler(boolean useTagInfo) {
+        public MyHandler(boolean useTagInfo, boolean ignoreDeprecated) {
             this.useTagInfo = useTagInfo;
+            this.ignoreDeprecated = ignoreDeprecated;
         }
 
         /**
@@ -125,6 +130,7 @@ public class PresetStats {
                 expandCombo = false;
                 current = new ItemStats();
                 current.name = attr.getValue(NAME);
+                deprecated = attr.getValue(DEPRECATED_ATTR) != null;
             } else if (CHUNK.equals(qName)) {
                 current = new ItemStats();
                 current.name = attr.getValue(ID);
@@ -327,7 +333,9 @@ public class PresetStats {
                 inOptional = false;
             } else if (!inOptional) {
                 if (ITEM.equals(qName)) {
-                    items.put(current.tag, current);
+                    if (!deprecated || !ignoreDeprecated) {
+                        items.put(current.tag, current);
+                    }
                     current = null;
                     expandedItems = null;
                 } else if (CHUNK.equals(qName)) {
@@ -347,10 +355,10 @@ public class PresetStats {
         }
     }
 
-    void parseXML(boolean useTagInfo, InputStream input) throws ParserConfigurationException, SAXException, IOException {
+    void parseXML(boolean useTagInfo, boolean ignoreDeprecated, InputStream input) throws ParserConfigurationException, SAXException, IOException {
         SAXParser saxParser = SAXParserFactory.newInstance().newSAXParser();
 
-        handler = new MyHandler(useTagInfo);
+        handler = new MyHandler(useTagInfo, ignoreDeprecated);
 
         saxParser.parse(input, handler);
     }
@@ -386,6 +394,7 @@ public class PresetStats {
         InputStream is = System.in;
         OutputStreamWriter os = null;
         boolean useTagInfo = false;
+        boolean ignoreDreprecated = false;
         try {
             os = new OutputStreamWriter(System.out, "UTF-8");
 
@@ -399,11 +408,14 @@ public class PresetStats {
 
             Option tagInfo = Option.builder("t").longOpt(TAGINFO).desc("query taginfo for stats, default: false").build();
 
+            Option ignoreDeprecatedOpt = Option.builder("d").longOpt(IGNOREDEPRECATED).desc("ignore deprecated items, default: false").build();
+
             Options options = new Options();
 
             options.addOption(inputFile);
             options.addOption(outputFile);
             options.addOption(tagInfo);
+            options.addOption(ignoreDeprecatedOpt);
 
             CommandLineParser parser = new DefaultParser();
             try {
@@ -420,6 +432,7 @@ public class PresetStats {
                     os = new OutputStreamWriter(new FileOutputStream(output), "UTF-8");
                 }
                 useTagInfo = line.hasOption(TAGINFO);
+                ignoreDreprecated = line.hasOption(IGNOREDEPRECATED);
             } catch (ParseException exp) {
                 HelpFormatter formatter = new HelpFormatter();
                 formatter.printHelp("PresetStats", options);
@@ -430,7 +443,7 @@ public class PresetStats {
             }
 
             try {
-                p.parseXML(useTagInfo, is);
+                p.parseXML(useTagInfo, ignoreDreprecated, is);
                 p.dumpStats(new PrintWriter(os));
             } catch (FileNotFoundException e) {
                 e.printStackTrace();

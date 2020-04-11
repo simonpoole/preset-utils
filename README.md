@@ -67,6 +67,7 @@ Generate a list of tag combinations (first and 2nd level) from the presets and g
     -i,--input <arg>      input preset file, default: standard in
     -o,--output <arg>     output file, default: standard out
     -t,--taginfo          query taginfo for tag counts, default: off
+    -d,--ignoredeprecated ignore deprecated items, default: false
     
 ## MergePresetStats
 

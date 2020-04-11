@@ -32,14 +32,17 @@ public class Tags {
         SECOND_LEVEL_KEYS.put("vending_machine", "vending");
         SECOND_LEVEL_KEYS.put("stadium", "sport");
         SECOND_LEVEL_KEYS.put("pitch", "sport");
+        SECOND_LEVEL_KEYS.put("track", "sport");
         SECOND_LEVEL_KEYS.put("sports_centre", "sport");
+        SECOND_LEVEL_KEYS.put("ice_rink", "sport");
+        SECOND_LEVEL_KEYS.put("raceway", "sport");
         SECOND_LEVEL_KEYS.put("restaurant", "cuisine");
         SECOND_LEVEL_KEYS.put("artwork", "artwork_type");
         SECOND_LEVEL_KEYS.put("shelter", "shelter_type");
         SECOND_LEVEL_KEYS.put("castle", "castle_type");
         SECOND_LEVEL_KEYS.put("fence", "fence_type");
-        // SECOND_LEVEL_KEYS.put("tower", "tower:type");
-        // SECOND_LEVEL_KEYS.put("mast", "tower:type");
+        SECOND_LEVEL_KEYS.put("tower", "tower:type");
+        SECOND_LEVEL_KEYS.put("mast", "tower:type");
     }
 
     public static final Map<String, String> KEYS_FOR_SPECIFIC_ELEMENT = new HashMap<>();

@@ -223,7 +223,7 @@ public class Preset2Html {
             public void endElement(String uri, String localMame, String name) throws SAXException {
                 if ("group".equals(name)) {
                     group = null;
-                    buffer.append("</div>\n");
+                    buffer.append("</div><p />\n");
                     groupCount--;
                 } else if ("optional".equals(name)) {
                     optional = false;
