@@ -17,7 +17,7 @@ apply plugin: 'maven-publish'
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
-version = '0.13.0'
+version = '0.15.0'
 def libName = "preset-utils"
 
 // In this section you declare where to find the dependencies of your project
@@ -47,7 +47,8 @@ dependencies {
 task getSynonyms(type: JavaExec) {
     main = "ch.poole.osm.presetutils.Synonyms"
     classpath = sourceSets.main.runtimeClasspath
-    args('-lang',    'de',
+    args('-u', 'https://raw.githubusercontent.com/openstreetmap/iD/release/dist/locales/',
+         '-lang', 'de',
     	 '-x', 'military')
 }
 
@@ -64,10 +65,10 @@ task presetsStats(type: JavaExec) {
     main = "ch.poole.osm.presetutils.PresetStats"
     classpath = sourceSets.main.runtimeClasspath
     // args('-ti', 'build/tmp/test.xml');
-    // args('-ti', 'build/tmp/id_preset.xml', '-o', 'build/tmp/id_tags.txt');
-    args('-ti', 'build/tmp/id_preset_notaginfo.xml', '-o', 'build/tmp/id_tags_notaginfo.txt');
+    // args('-dti', 'build/tmp/id_preset.xml', '-o', 'build/tmp/id_tags.txt');
+    // args('-dti', 'build/tmp/id_preset_notaginfo.xml', '-o', 'build/tmp/id_tags_notaginfo.txt');
     // args('-ti', 'build/tmp/defaultpresets.xml', '-o', 'build/tmp/josm_tags.txt')
-    // args('-ti', '/Users/simon/git/beautified-JOSM-preset/master_preset.xml', '-o', 'build/tmp/vespucci_tags.txt')
+    args('-dti', '/Users/simon/git/beautified-JOSM-preset/master_preset.xml', '-o', 'build/tmp/vespucci_tags.txt')
     // args('-ti', '/Users/simon/Documents/OSM/SOTM 2018/presets-josm-20071016-current-format.xml', '-o', 'build/tmp/josm_tags_2007.txt')
 }
 presetsStats.group = 'preset stuff'
@@ -86,9 +87,10 @@ task comparePresets(type: JavaExec) {
     main = "ch.poole.osm.presetutils.ComparePresets"
     classpath = sourceSets.main.runtimeClasspath
     // args('-r','/Users/simon/Documents/OSM/SOTM 2018/tags_reference.txt','-i','build/tmp/vespucci_tags.txt')
-    args('-r','build/tmp/josm_tags.txt','-i','build/tmp/vespucci_tags.txt')
+    // args('-r','build/tmp/josm_tags.txt','-i','build/tmp/vespucci_tags.txt')
     // args('-r','build/tmp/taginfo_tags_nosubtags.txt','-i','build/tmp/id_tags.txt')
-    // args( '-r','build/tmp/id_tags.txt','-i','build/tmp/vespucci_tags.txt')
+    // args( '-r','build/tmp/id_tags_notaginfo.txt','-i','build/tmp/vespucci_tags.txt')
+    args( '-r','build/tmp/id_tags.txt','-i','build/tmp/vespucci_tags.txt')
 }
 comparePresets.group = 'preset stuff'
 comparePresets.description = 'Compare input tag list to reference'
@@ -98,11 +100,11 @@ task mergePresetsStats(type: JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     // args('-i', 'build/tmp/id_tags.txt', 'build/tmp/id_tags_notaginfo.txt', 'build/tmp/josm_tags.txt', 'build/tmp/vespucci_tags.txt', '/Users/simon/Documents/OSM/SOTM 2018/tags_reference.txt')
     // args('-i', 'build/tmp/id_tags.txt', , 'build/tmp/id_tags_notaginfo.txt', 'build/tmp/vespucci_tags.txt', 'build/tmp/taginfo_tags.txt', '-o', 'build/tmp/merged_stats.txt')
-    args('-i', 'build/tmp/id_tags.txt', , 'build/tmp/id_tags_notaginfo.txt', 'build/tmp/vespucci_tags.txt', 'build/tmp/taginfo_tags_nosubtags.txt', '-o', 'build/tmp/merged_stats_nosubtags.txt')
+    // args('-i', 'build/tmp/id_tags.txt', , 'build/tmp/id_tags_notaginfo.txt', 'build/tmp/vespucci_tags.txt', 'build/tmp/taginfo_tags_nosubtags.txt', '-o', 'build/tmp/merged_stats_nosubtags.txt')
+    args('-i', 'build/tmp/taginfo_tags.txt', 'build/tmp/id_tags.txt', 'build/tmp/id_tags_notaginfo.txt', 'build/tmp/vespucci_tags.txt', 'build/tmp/josm_tags.txt', '-o', 'build/tmp/merged_stats.txt')
 }
 mergePresetsStats.group = 'preset stuff'
 mergePresetsStats.description = 'Merge multiple preset tag stats files'
-
 
 task sourcesJar(type: Jar) {
 	from mainSource, testSource

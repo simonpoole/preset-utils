@@ -13,10 +13,9 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.Map;
+import java.util.List;
 import java.util.Set;
 import java.util.zip.GZIPInputStream;
 
@@ -43,7 +42,9 @@ public class Synonyms {
 
     private static final int TIMEOUT = 20;
 
-    private static ArrayList<String> excludes;
+    private static List<String> excludes;
+
+    private static String base;
 
     /**
      * @param printWriter PrintWriter for the file to write to
@@ -55,7 +56,10 @@ public class Synonyms {
         InputStream is = null;
         JsonReader reader = null;
         try {
-            URL url = new URL("https://raw.githubusercontent.com/openstreetmap/iD/master/dist/locales/" + lang + ".json");
+            if (!base.endsWith("/")) {
+                base = base + "/";
+            }
+            URL url = new URL(base + lang + ".json");
             is = openConnection(url);
             reader = new JsonReader(new InputStreamReader(is, "UTF-8"));
             try {
@@ -209,6 +213,8 @@ public class Synonyms {
         OutputStream os = System.out;
         String lang = "de";
         // arguments
+        Option baseUrl = Option.builder("u").longOpt("url").hasArg().desc("base url for the input files, required").required().build();
+
         Option inputFile = Option.builder("l").longOpt("lang").hasArg().desc("language to retrieve synonyms for").build();
 
         Option outputFile = Option.builder("o").longOpt("output").hasArg().desc("output .html file, default: standard out").build();
@@ -217,6 +223,7 @@ public class Synonyms {
 
         Options options = new Options();
 
+        options.addOption(baseUrl);
         options.addOption(inputFile);
         options.addOption(outputFile);
         options.addOption(exclude);
@@ -226,6 +233,9 @@ public class Synonyms {
             try {
                 // parse the command line arguments
                 CommandLine line = parser.parse(options, args);
+                if (line.hasOption("u")) {
+                    base = line.getOptionValue("url");
+                }
                 if (line.hasOption("l")) {
                     lang = line.getOptionValue("lang");
                 }
