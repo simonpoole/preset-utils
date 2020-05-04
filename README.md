@@ -37,10 +37,12 @@ Further it expects _preset.css_ in the directory _website_
 Retrieve synonym values from the iD editor repository and output a json object containing them.
 
 ### Usage
- 
+      
+     -u,--url <arg>        base url, required
      -l,--lang <arg>       language code to retrieve the synonyms for, default: en
      -o,--output <arg>     output json file, default: standard out
      -x,--exclude <args>   skip any entries that contain the terms (for example "military")
+     -r,--remove           remove empty output files
      
 ## ID2JOSM
 

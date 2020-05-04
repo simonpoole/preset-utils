@@ -1,5 +1,6 @@
 package ch.poole.osm.presetutils;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -212,6 +213,7 @@ public class Synonyms {
     public static void main(String[] args) {
         OutputStream os = System.out;
         String lang = "de";
+        String output = null;
         // arguments
         Option baseUrl = Option.builder("u").longOpt("url").hasArg().desc("base url for the input files, required").required().build();
 
@@ -220,6 +222,8 @@ public class Synonyms {
         Option outputFile = Option.builder("o").longOpt("output").hasArg().desc("output .html file, default: standard out").build();
 
         Option exclude = Option.builder("x").longOpt("exclude").hasArgs().desc("one or more terms that should be excluded").build();
+        
+        Option remove = Option.builder("r").longOpt("remove").hasArgs().desc("remove empty output files").build();
 
         Options options = new Options();
 
@@ -230,41 +234,45 @@ public class Synonyms {
 
         CommandLineParser parser = new DefaultParser();
         try {
-            try {
-                // parse the command line arguments
-                CommandLine line = parser.parse(options, args);
-                if (line.hasOption("u")) {
-                    base = line.getOptionValue("url");
+            // parse the command line arguments
+            CommandLine line = parser.parse(options, args);
+            if (line.hasOption("u")) {
+                base = line.getOptionValue("url");
+            }
+            if (line.hasOption("l")) {
+                lang = line.getOptionValue("lang");
+            }
+            if (line.hasOption("o")) {
+                output = line.getOptionValue("output");
+                os = new FileOutputStream(output);
+            }
+            if (line.hasOption("x")) {
+                String[] tempExcludes = line.getOptionValues("exclude");
+                if (tempExcludes != null) {
+                    excludes = new ArrayList<>(Arrays.asList(tempExcludes));
                 }
-                if (line.hasOption("l")) {
-                    lang = line.getOptionValue("lang");
-                }
-                if (line.hasOption("o")) {
-                    String output = line.getOptionValue("output");
-                    os = new FileOutputStream(output);
-                }
-                if (line.hasOption("x")) {
-                    String[] tempExcludes = line.getOptionValues("exclude");
-                    if (tempExcludes != null) {
-                        excludes = new ArrayList<>(Arrays.asList(tempExcludes));
-                    }
-                }
-            } catch (ParseException exp) {
-                HelpFormatter formatter = new HelpFormatter();
-                formatter.printHelp("Synonyms", options);
-                return;
-            } catch (FileNotFoundException e) {
-                System.err.println("File not found: " + e.getMessage());
-                return;
             }
             getSynonyms(lang, new PrintWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8)));
+            os.close();
+            if (output != null && line.hasOption("r")) {
+                File o = new File(output);
+                if (o.length() == 0 && o.delete()) {
+                    System.err.println("Nothing written to " + output + ", deleted.");
+                }
+            }
+        } catch (ParseException exp) {
+            HelpFormatter formatter = new HelpFormatter();
+            formatter.printHelp("Synonyms", options);
+        } catch (IOException e) {
+            System.err.println("Error: " + e.getMessage()); // NOSONAR
         } finally {
-            try {
-                os.close();
-            } catch (IOException e) {
-                // NOSONAR
+            if (os != null) {
+                try {
+                    os.close();
+                } catch (IOException e) {
+                    // Ignore
+                }
             }
         }
-
     }
 }
