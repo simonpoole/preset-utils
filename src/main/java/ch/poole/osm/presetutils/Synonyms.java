@@ -231,6 +231,7 @@ public class Synonyms {
         options.addOption(inputFile);
         options.addOption(outputFile);
         options.addOption(exclude);
+        options.addOption(remove);
 
         CommandLineParser parser = new DefaultParser();
         try {
