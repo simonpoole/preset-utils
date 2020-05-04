@@ -223,7 +223,7 @@ public class Synonyms {
 
         Option exclude = Option.builder("x").longOpt("exclude").hasArgs().desc("one or more terms that should be excluded").build();
         
-        Option remove = Option.builder("r").longOpt("remove").hasArgs().desc("remove empty output files").build();
+        Option remove = Option.builder("r").longOpt("remove").desc("remove empty output files").build();
 
         Options options = new Options();
 
