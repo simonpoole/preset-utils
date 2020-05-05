@@ -17,7 +17,7 @@ apply plugin: 'maven-publish'
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
-version = '0.18.0'
+version = '0.19.0'
 def libName = "preset-utils"
 
 // In this section you declare where to find the dependencies of your project
@@ -49,7 +49,8 @@ task getSynonyms(type: JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     args('-u', 'https://raw.githubusercontent.com/openstreetmap/iD/release/dist/locales/',
          '-lang', 'de',
-    	 '-x', 'military')
+    	 '-x', 'military',
+    	 '-r')
 }
 
 task convertIdPresets(type: JavaExec) {
