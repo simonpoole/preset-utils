@@ -9,7 +9,7 @@
     <xsl:template match="@long_text" />
     <xsl:template match="@i18n" />
     <xsl:template match="@value_type" />
-    <xsl:template match="@value_count_key" />"
+    <xsl:template match="@value_count_key" />
     <xsl:template match="m:key/@values_context" />
     <xsl:template match="m:key/@text" />
     <xsl:template match="m:presets/@object_keys" />
