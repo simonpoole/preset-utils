@@ -2,6 +2,8 @@
 
 A couple of utils for processing JOSM format presets for OSM editors and related stuff.
 
+The repo further contains all vespucci preset xlmns files and a copy of the JOSM one.
+
 ## Preset2Pot
 
 Generates a [gettext](https://www.gnu.org/software/gettext/) format translation template file from the preset file.
