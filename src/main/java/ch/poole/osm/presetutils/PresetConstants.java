@@ -23,6 +23,8 @@ public abstract class PresetConstants {
     public static final String VALUES                     = "values";
     public static final String VALUES_FROM                = "values_from";
     public static final String DELIMITER                  = "delimiter";
+    public static final String COMBO_DELIMITER            = ",";
+    public static final String MULTISELECT_DELIMITER      = ";";
     public static final String COMBO_FIELD                = "combo";
     public static final String MULTISELECT_FIELD          = "multiselect";
     public static final String YES                        = "yes";

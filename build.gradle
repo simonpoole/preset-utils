@@ -19,7 +19,7 @@ apply plugin: 'maven-publish'
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
-version = '0.22.0'
+version = '0.23.0'
 def libName = "preset-utils"
 
 // In this section you declare where to find the dependencies of your project
@@ -125,6 +125,15 @@ task generateJosmIconMapping(type: JavaExec) {
 }
 generateJosmIconMapping.group = 'preset stuff'
 generateJosmIconMapping.description = 'Generate a tag to icons mapping for JOSM'
+
+task checkPreset(type: JavaExec) {
+    main = "ch.poole.osm.presetutils.CheckPreset"
+    classpath = sourceSets.main.runtimeClasspath
+    // args('-i', 'build/tmp/master_preset.xml')
+    args('-i', '/Users/simon/git/beautified-JOSM-preset/master_preset.xml')
+}
+checkPreset.group = 'preset stuff'
+checkPreset.description = 'Do some additional checks on a preset'
 
 def loadProperties = { filename -> 
     def properties = new Properties()
