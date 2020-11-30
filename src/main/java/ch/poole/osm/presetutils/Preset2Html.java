@@ -362,15 +362,8 @@ public class Preset2Html {
             }
 
             try {
-                p.setInputFilename("master_preset.xml");
                 p.parseXML(is, new PrintWriter(os));
-            } catch (FileNotFoundException e) {
-                e.printStackTrace();
-            } catch (ParserConfigurationException e) {
-                e.printStackTrace();
-            } catch (SAXException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
+            } catch (ParserConfigurationException | SAXException | IOException e) {
                 e.printStackTrace();
             }
         } finally {
