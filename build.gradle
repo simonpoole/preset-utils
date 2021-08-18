@@ -27,10 +27,10 @@ apply plugin: 'maven-publish'
 apply plugin: 'signing'
 apply plugin: "com.github.breadmoirai.github-release"
 
-sourceCompatibility = 1.7
-targetCompatibility = 1.7
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
-version = '0.23.2'
+version = '0.24.0'
 def libName = "preset-utils"
 
 repositories {

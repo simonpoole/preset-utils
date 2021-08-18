@@ -31,7 +31,7 @@ import org.jetbrains.annotations.NotNull;
 import com.google.gson.stream.JsonReader;
 
 /**
- * Retrieve synoyms from the iD repo
+ * Retrieve synonyms from the iD repo
  * 
  * @author simon
  *
@@ -50,24 +50,17 @@ public class Synonyms {
      * @param printWriter PrintWriter for the file to write to
      */
     static void getSynonyms(String lang, PrintWriter printWriter) {
-        // Log.d("DiscardedTags","Parsing configuration file");
-
         // https://raw.githubusercontent.com/openstreetmap/iD/master/dist/locales/de.json
-        InputStream is = null;
-        JsonReader reader = null;
-        try {
-            if (!base.endsWith("/")) {
-                base = base + "/";
-            }
-            URL url = new URL(base + lang + ".json");
-            is = openConnection(url);
-            reader = new JsonReader(new InputStreamReader(is, "UTF-8"));
+        if (!base.endsWith("/")) {
+            base = base + "/";
+        }
+
+        try (InputStream is = openConnection(new URL(base + lang + ".json")); JsonReader reader = new JsonReader(new InputStreamReader(is, "UTF-8"))) {
             try {
                 reader.beginObject();
                 if (reader.hasNext()) {
                     String jsonName = reader.nextName();
                     reader.beginObject();
-
                     while (reader.hasNext()) {
                         jsonName = reader.nextName();
                         if ("presets".equals(jsonName)) {
@@ -98,16 +91,17 @@ public class Synonyms {
                                             }
                                         }
                                         reader.beginObject();
-                                        jsonName = reader.nextName();
-                                        if ("name".equals(jsonName)) { // FIXME make order independent
-                                            name = reader.nextString();
-                                        } else if ("terms".equals(jsonName)) { // in some cases name seems to be missing
-                                            terms = reader.nextString();
-                                        }
-                                        if (reader.hasNext()) {
+                                        while (reader.hasNext()) {
                                             jsonName = reader.nextName();
-                                            if ("terms".equals(jsonName)) {
+                                            switch (jsonName) {
+                                            case "name":
+                                                name = reader.nextString();
+                                                break;
+                                            case "terms":
                                                 terms = reader.nextString();
+                                                break;
+                                            default:
+                                                reader.skipValue();
                                             }
                                         }
                                         reader.endObject();
@@ -120,7 +114,7 @@ public class Synonyms {
                                         if (name != null && !"".equals(name)) {
                                             set.add(name);
                                         }
-                                        if (set.size() > 0) {
+                                        if (!set.isEmpty()) {
                                             // output
                                             if (!first) {
                                                 printWriter.write(",\n");
@@ -159,19 +153,6 @@ public class Synonyms {
             }
         } catch (IOException e) {
             System.out.println(e.getMessage());
-        } finally {
-            try {
-                if (reader != null) {
-                    reader.close();
-                }
-            } catch (IOException ioex) {
-            }
-            try {
-                if (is != null) {
-                    is.close();
-                }
-            } catch (IOException ioex) {
-            }
         }
     }
 
@@ -221,7 +202,7 @@ public class Synonyms {
         Option outputFile = Option.builder("o").longOpt("output").hasArg().desc("output .html file, default: standard out").build();
 
         Option exclude = Option.builder("x").longOpt("exclude").hasArgs().desc("one or more terms that should be excluded").build();
-        
+
         Option remove = Option.builder("r").longOpt("remove").desc("remove empty output files").build();
 
         Options options = new Options();
