@@ -122,7 +122,7 @@ public class Synonyms {
                                             printWriter.write("\"" + presetName + "\":[\n");
                                             Iterator<String> iter = set.iterator();
                                             while (iter.hasNext()) {
-                                                printWriter.write("\"" + iter.next() + "\"");
+                                                printWriter.write("\"" + iter.next().replace("\"", "\\\"") + "\"");
                                                 if (iter.hasNext()) {
                                                     printWriter.write(",");
                                                 }
@@ -197,9 +197,9 @@ public class Synonyms {
         // arguments
         Option baseUrl = Option.builder("u").longOpt("url").hasArg().desc("base url for the input files, required").required().build();
 
-        Option inputFile = Option.builder("l").longOpt("lang").hasArg().desc("language to retrieve synonyms for").build();
+        Option language = Option.builder("l").longOpt("lang").hasArg().desc("language to retrieve synonyms for").build();
 
-        Option outputFile = Option.builder("o").longOpt("output").hasArg().desc("output .html file, default: standard out").build();
+        Option outputFile = Option.builder("o").longOpt("output").hasArg().desc("output json file, default: standard out").build();
 
         Option exclude = Option.builder("x").longOpt("exclude").hasArgs().desc("one or more terms that should be excluded").build();
 
@@ -208,7 +208,7 @@ public class Synonyms {
         Options options = new Options();
 
         options.addOption(baseUrl);
-        options.addOption(inputFile);
+        options.addOption(language);
         options.addOption(outputFile);
         options.addOption(exclude);
         options.addOption(remove);
