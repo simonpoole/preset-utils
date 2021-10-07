@@ -30,7 +30,7 @@ apply plugin: "com.github.breadmoirai.github-release"
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-version = '0.24.0'
+version = '0.25.0'
 def libName = "preset-utils"
 
 repositories {
@@ -57,7 +57,7 @@ dependencies {
 task getSynonyms(type: JavaExec) {
     main = "ch.poole.osm.presetutils.Synonyms"
     classpath = sourceSets.main.runtimeClasspath
-    args('-u', 'https://raw.githubusercontent.com/openstreetmap/iD/release/dist/locales/',
+    args('-u', 'https://raw.githubusercontent.com/openstreetmap/id-tagging-schema/main/dist/translations/',
          '-lang', 'de',
     	 '-x', 'military',
     	 '-r')
@@ -116,6 +116,14 @@ task mergePresetsStats(type: JavaExec) {
 }
 mergePresetsStats.group = 'preset stuff'
 mergePresetsStats.description = 'Merge multiple preset tag stats files'
+
+task nsiStats(type: JavaExec) {
+    main = "ch.poole.osm.presetutils.NsiStats"
+    classpath = sourceSets.main.runtimeClasspath
+    args('-i', 'build/tmp/name-suggestions.min.json', '-o', 'build/tmp/nsi_stats.txt')
+}
+nsiStats.group = 'NSI stuff'
+nsiStats.description = 'NSI stats files'
 
 task generateIconList(type: JavaExec) {
     main = "ch.poole.osm.presetutils.ListIcons"
