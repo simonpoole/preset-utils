@@ -91,6 +91,7 @@
             </choice>
         </sequence>
         <attributeGroup ref="tns:attributes.icon" />
+        <attribute name="items_sort" type="string" />
 
         <attribute name="type" use="prohibited" />
         <attribute name="text" use="prohibited" />
@@ -106,6 +107,8 @@
         <complexContent>
             <extension base="tns:group-parent">
                 <attributeGroup ref="tns:attributes.name" />
+                <attribute name="regions" type="string" />
+                <attribute name="exclude_regions" type="boolean"/>
             </extension>
         </complexContent>
     </complexType>
@@ -171,7 +174,11 @@
                 </documentation>
             </annotation>
         </attribute>
-
+		<attribute name="deprecated" type="boolean"/>
+        <attribute name="regions" type="string" />
+        <attribute name="exclude_regions" type="boolean"/>
+        <attribute name="autoapply" type="boolean"/>
+        <attribute name="min_match" type="positiveInteger" />
         <attribute name="text" use="prohibited" />
         <anyAttribute processContents="skip" />
     </complexType>
@@ -184,6 +191,7 @@
         </annotation>
         <group ref="tns:optional_elements" maxOccurs="unbounded" />
         <attributeGroup ref="tns:attributes.text" />
+        <attribute name="text_context" type="string" />
     </complexType>
 
     <complexType name="chunk">
@@ -268,6 +276,7 @@
             </annotation>
         </attribute>
         <attribute name="match" type="tns:match" />
+        <attribute name="values_context" type="string" />
     </complexType>
 
     <complexType name="link">
@@ -280,6 +289,7 @@
         <attribute name="href" type="string" />
         <attributeGroup ref="tns:attributes.text" />
         <attributeGroup ref="tns:attributes.icon" />
+        <attribute name="text_context" type="string" />
 
         <attribute name="name" use="prohibited" />
         <anyAttribute processContents="skip" />
@@ -299,6 +309,7 @@
             </annotation>
         </attribute>
         <attributeGroup ref="tns:attributes.text" />
+        <attribute name="alternative" type="boolean" />
         <attribute name="name" use="prohibited" />
         <anyAttribute processContents="skip" />
     </complexType>
@@ -353,6 +364,8 @@
                 ]]></documentation>
             </annotation>
         </attribute>
+        <attribute name="javascript" type="string" />
+        <attribute name="value_type" type="tns:value_type" />
 
         <attribute name="type" use="prohibited" />
         <attribute name="name" use="prohibited" />
@@ -460,6 +473,8 @@
                 ]]></documentation>
             </annotation>
         </attribute>
+        <attribute name="text" type="string" />
+        <attribute name="text_context" type="string" />
         <anyAttribute processContents="skip" />
     </complexType>
 
