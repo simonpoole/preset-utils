@@ -391,6 +391,13 @@
             </annotation>
         </attribute>
         <attributeGroup ref="tns:attributes.icon" />
+        <attribute name="deprecated" type="boolean">
+            <annotation>
+                <documentation><![CDATA[
+                    If true the value is considered to be deprecated.
+                ]]></documentation>
+            </annotation>
+        </attribute>
         <anyAttribute processContents="skip" />
     </complexType>
 
@@ -635,6 +642,13 @@
             <annotation>
                 <documentation><![CDATA[
                     An explicitly declared default value for the item. This value is only applied through a preset when the object the preset is applied to has zero keys. If no value for default is specified, no value is set to the key. Used in >check /<, >text /<, >combo /< and >multiselect /<.
+                ]]></documentation>
+            </annotation>
+        </attribute>
+        <attribute name="deprecated" type="boolean">
+            <annotation>
+                <documentation><![CDATA[
+                    If true the key is considered to be deprecated.
                 ]]></documentation>
             </annotation>
         </attribute>
