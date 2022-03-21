@@ -554,6 +554,24 @@
             <enumeration value="force" />
         </restriction>
     </simpleType>
+    
+    <simpleType name="value_type">
+        <annotation>
+            <documentation><![CDATA[
+                Type of the value, used to sllect the best method of data entry.
+            ]]></documentation>
+        </annotation>
+        <restriction base="string">
+            <enumeration value="opening_hours" />
+            <enumeration value="opening_hours_mixed" />
+            <enumeration value="conditional" />
+            <enumeration value="integer" />
+            <enumeration value="website" />
+            <enumeration value="phone" />
+            <enumeration value="wikipedia" />
+            <enumeration value="wikidata" />
+        </restriction>
+    </simpleType>
 
     <simpleType name="match">
         <annotation>
