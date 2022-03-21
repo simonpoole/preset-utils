@@ -10,8 +10,10 @@
     <xsl:template match="@i18n" />
     <xsl:template match="@value_type" />
     <xsl:template match="@value_count_key" />
+    <xsl:template match="@image" />
     <xsl:template match="m:key/@values_context" />
     <xsl:template match="m:key/@text" />
+    <xsl:template match="m:key/@object" />
     <xsl:template match="m:presets/@object_keys" />
     <xsl:template match="m:checkgroup/@text" />
     <xsl:template match="m:checkgroup/@text_context" />

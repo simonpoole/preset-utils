@@ -75,7 +75,14 @@
                         </documentation>
                     </annotation>
                 </attribute>
-
+                <attribute name="object_keys" type="string">
+                    <annotation>
+                        <documentation>
+                            Comma separated list of keys that for matching purposes considered to define objects.
+                        </documentation>
+                    </annotation>
+                </attribute>
+                
                 <anyAttribute processContents="skip" />
             </extension>
         </complexContent>
@@ -278,6 +285,13 @@
             </annotation>
         </attribute>
         <attribute name="match" type="tns:match" />
+        <attribute name="object" type="boolean">
+            <annotation>
+                <documentation><![CDATA[
+                    Treat this tag as an exception to the list of keys in object_keys.
+                ]]></documentation>
+            </annotation>
+        </attribute>
         <attribute name="values_context" type="string" />
     </complexType>
 
