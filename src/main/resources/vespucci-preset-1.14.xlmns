@@ -200,7 +200,6 @@
         </annotation>
         <group ref="tns:optional_elements" maxOccurs="unbounded" />
         <attributeGroup ref="tns:attributes.text" />
-        <attribute name="text_context" type="string" />
     </complexType>
 
     <complexType name="chunk">
@@ -305,7 +304,6 @@
         <attribute name="href" type="string" />
         <attributeGroup ref="tns:attributes.text" />
         <attributeGroup ref="tns:attributes.icon" />
-        <attribute name="text_context" type="string" />
 
         <attribute name="name" use="prohibited" />
         <anyAttribute processContents="skip" />
