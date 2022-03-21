@@ -30,7 +30,7 @@ apply plugin: "com.github.breadmoirai.github-release"
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-version = '0.26.0'
+version = '0.27.0'
 def libName = "preset-utils"
 
 repositories {
@@ -180,6 +180,13 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 //	options.encoding = 'UTF-8'
 }
 
+task replaceVersion {
+    inputs.file('build.gradle')
+    ant.replaceregexp(match:'([0-9]+\\.[0-9]+\\.[0-9]+)', replace:"${version}", flags:'g', byline:true) {
+        fileset(dir: '.', includes: 'README.md')
+    }
+}
+
 //create a single Jar with all dependencies
 task fatJar(type: Jar) {
     manifest {
@@ -262,4 +269,8 @@ githubRelease {
     FilenameFilter filter = { dir, filename -> filename.contains(version) }
     releaseAssets = jar.destinationDir.listFiles filter
     overwrite true
+}
+
+build {
+    dependsOn "replaceVersion"
 }
