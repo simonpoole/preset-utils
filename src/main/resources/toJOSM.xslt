@@ -1,9 +1,36 @@
-<xsl:stylesheet version="1.0" 
-	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-	xmlns:m="http://josm.openstreetmap.de/tagging-preset-1.0" >
-    <!--empty template suppresses attributes-->
+<xsl:stylesheet version="1.0"
+    xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
+    xmlns:m="http://josm.openstreetmap.de/tagging-preset-1.0">
+    <!--empty template suppresses attributes -->
+    <xsl:template match="@name[../@deprecated]">
+        <xsl:attribute name="name">
+            <xsl:value-of select="." />
+            <xsl:text> (deprecated)</xsl:text>
+        </xsl:attribute>
+    </xsl:template>
+    <xsl:template match="@short_description[../@deprecated]">
+        <xsl:attribute name="short_description">
+            <xsl:value-of select="." />
+            <xsl:text> (deprecated)</xsl:text>
+        </xsl:attribute>
+    </xsl:template>
     <xsl:template match="@deprecated" />
     <xsl:template match="@autoapply" />
+    <xsl:template match="@name[../@regions]">
+        <xsl:attribute name="name">
+            <xsl:value-of select="." />
+            <xsl:choose>
+                <xsl:when test="../@exclude_regions">
+                    <xsl:text> (default)</xsl:text>
+                </xsl:when>
+                <xsl:otherwise>
+                    <xsl:text> (</xsl:text>
+                    <xsl:value-of select="../@regions" />
+                    <xsl:text>)</xsl:text>
+                </xsl:otherwise>
+            </xsl:choose> 
+        </xsl:attribute>
+    </xsl:template>
     <xsl:template match="@regions" />
     <xsl:template match="@exclude_regions" />
     <xsl:template match="@long_text" />
@@ -22,10 +49,10 @@
     <xsl:template match="m:preset_link/@alternative" />
     <!-- this removes the whole item -->
     <xsl:template match="*[m:text[@javascript]]" />
-    <!--identity template copies everything forward by default-->
+    <!--identity template copies everything forward by default -->
     <xsl:template match="@*|node()">
         <xsl:copy>
-            <xsl:apply-templates select="@*|node()"/>
+            <xsl:apply-templates select="@*|node()" />
         </xsl:copy>
     </xsl:template>
 </xsl:stylesheet>
