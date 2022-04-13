@@ -2,7 +2,7 @@
 
 A couple of utils for processing JOSM format presets for OSM editors and related stuff.
 
-The repo further contains all vespucci preset xlmns files and a copy of the JOSM one.
+The repo further contains all Vespucci preset xlmns files, a copy of the JOSM one (JOSM currently doesn't version the file), and a number of xslt scripts to convert preset files. In particular src/main/resources/toJOSM.xslt will convert a preset file using the extensions supported by Vespucci to a JOSM compatible one (naturally the functionality will be loss too).
 
 To run any of the commands below get the [fat jar from the releases](https://github.com/simonpoole/preset-utils/releases/tag/0.27.2) in this repository and then run
 

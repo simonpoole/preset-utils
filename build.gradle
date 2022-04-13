@@ -30,7 +30,7 @@ apply plugin: "com.github.breadmoirai.github-release"
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-version = '0.27.2'
+version = '0.28.0'
 def libName = "preset-utils"
 
 repositories {
@@ -159,15 +159,15 @@ def loadProperties = { filename ->
     return properties
 }
 
-task convertToMappedIcons(type: Copy) {
-    from projectDir
-    include 'build/tmp/master_preset.xml'
-    into 'build/gen/'
-    filteringCharset = 'UTF-8'
-    rename ('master_preset.xml', 'mapped_master_preset.xml')
-    def map = loadProperties('build/tmp/reverse_vespucci_icons.csv')
-    filter(ReplaceTokens, beginToken : 'icon="', endToken : '"', tokens: map)
-}
+//task convertToMappedIcons(type: Copy) {
+//    from projectDir
+//    include 'build/tmp/master_preset.xml'
+//    into 'build/gen/'
+//    filteringCharset = 'UTF-8'
+//    rename ('master_preset.xml', 'mapped_master_preset.xml')
+//    def map = loadProperties('build/tmp/reverse_vespucci_icons.csv')
+//    filter(ReplaceTokens, beginToken : 'icon="', endToken : '"', tokens: map)
+//}
 
 task sourcesJar(type: Jar) {
 	from mainSource, testSource
