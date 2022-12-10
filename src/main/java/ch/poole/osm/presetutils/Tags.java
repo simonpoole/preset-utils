@@ -10,7 +10,9 @@ import java.util.Set;
 public class Tags {
     /**
      * An set of tags considered 'important'. These are typically tags that define real-world objects and not properties
-     * of such.
+     * of such. 
+     * 
+     * Needs some mechanism to model cycleway=asl and junction=yes
      */
     public static final Set<String> OBJECT_KEYS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("aerialway", "aeroway", "amenity", "barrier",
             "boundary", "building", "craft", "emergency", "ford", "geological", "highway", "historic", "landuse", "leisure", "man_made", "military", "natural",
