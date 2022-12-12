@@ -354,7 +354,7 @@ public class ID2JOSM {
 
         public void toJosm(PrintWriter writer) {
             indent(writer, 1);
-            String translatedName = translations.get(name);
+            String translatedName = presetNameTranslations.get(name);
             writer.print("<item name=\"" + StringEscapeUtils.escapeXml11(translatedName != null ? translatedName : name) + "\" ");
             if (icon != null) {
                 writer.print("icon=\"" + StringEscapeUtils.escapeXml11(icon) + "\" ");
@@ -488,7 +488,8 @@ public class ID2JOSM {
 
     static LinkedHashMap<String, Item> items = new LinkedHashMap<>();
 
-    private static Map<String, String> translations = new HashMap<>();
+    private static Map<String, String> presetNameTranslations = new HashMap<>();
+    private static Map<String, String> fieldTranslations      = new HashMap<>();
 
     private static boolean chunkMode    = false;
     private static boolean tagInfoMode  = true;
@@ -500,9 +501,9 @@ public class ID2JOSM {
      */
     static void convertId(@NotNull PrintWriter printWriter) {
         try {
+            parseIdTranslation(new URL(translationUrl)); // retrieve before fields
             parseIdFields(new URL(fieldsUrl));
             parseIdPreset(new URL(presetUrl));
-            parseIdTranslation(new URL(translationUrl));
 
             // print out
             printWriter.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
@@ -557,14 +558,50 @@ public class ID2JOSM {
                     if ("presets".equals(jsonName)) {
                         reader.beginObject();
                         while (reader.hasNext()) {
-                            if ("presets".equals(reader.nextName())) {
+                            jsonName = reader.nextName();
+                            if ("presets".equals(jsonName)) {
                                 reader.beginObject();
                                 while (reader.hasNext()) {
-                                    String presetName = reader.nextName();
+                                    String fieldName = reader.nextName();
                                     reader.beginObject();
                                     while (reader.hasNext()) {
                                         if ("name".equals(reader.nextName())) {
-                                            translations.put(presetName, reader.nextString());
+                                            presetNameTranslations.put(fieldName, reader.nextString());
+                                        } else {
+                                            reader.skipValue();
+                                        }
+                                    }
+                                    reader.endObject();
+                                }
+                                reader.endObject();
+                            } else if ("fields".equals(jsonName)) {
+                                reader.beginObject();
+                                while (reader.hasNext()) {
+                                    String fieldName = reader.nextName();
+                                    reader.beginObject();
+                                    while (reader.hasNext()) {
+                                        jsonName = reader.nextName();
+                                        if ("label".equals(jsonName)) {
+                                            fieldTranslations.put(fieldName, reader.nextString());
+                                        } else if ("options".equals(jsonName)) {
+                                            reader.beginObject();
+                                            while (reader.hasNext()) {
+                                                jsonName = reader.nextName();
+                                                if (reader.peek().equals(JsonToken.BEGIN_OBJECT)) {
+                                                    reader.beginObject();
+                                                    while (reader.hasNext()) {
+                                                        if ("title".equals(reader.nextName())) {
+                                                            fieldTranslations.put(optionsKey(fieldName, jsonName), reader.nextString());
+                                                        } else {
+                                                            reader.skipValue();
+                                                        }
+                                                    }
+                                                    reader.endObject();
+                                                } else {
+                                                    fieldTranslations.put(optionsKey(fieldName, jsonName), reader.nextString());
+                                                }
+                                            }
+                                            reader.endObject();
                                         } else {
                                             reader.skipValue();
                                         }
@@ -588,6 +625,17 @@ public class ID2JOSM {
             LOGGER.log(Level.SEVERE, "Error reading translations: {0}", e.getMessage());
             throw e;
         }
+    }
+
+    /**
+     * Construct a key for a field "option"/value
+     * 
+     * @param fieldName the field name
+     * @param optionName the option name
+     * @return a hopefully unique key
+     */
+    private static String optionsKey(String fieldName, String optionName) {
+        return fieldName + "|options|" + optionName;
     }
 
     /**
@@ -777,11 +825,11 @@ public class ID2JOSM {
         try (InputStream is = Utils.openConnection(url); JsonReader reader = new JsonReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
             reader.beginObject();
             while (reader.hasNext()) {
-                String jsonName = reader.nextName();
+                String fieldName = reader.nextName();
                 Field current = new Field();
-                fields.put(jsonName, current);
-                current.name = jsonName;
-                fieldKeys.put(current, jsonName);
+                fields.put(fieldName, current);
+                current.name = fieldName;
+                fieldKeys.put(current, fieldName);
                 reader.beginObject();
                 while (reader.hasNext()) {
                     switch (reader.nextName()) {
@@ -824,6 +872,7 @@ public class ID2JOSM {
                         while (reader.hasNext()) {
                             ValueAndDescription value = new ValueAndDescription();
                             value.value = reader.nextString();
+                            value.description = fieldTranslations.get(optionsKey(current.name, value.value));
                             current.options.add(value);
                         }
                         reader.endArray();
@@ -834,49 +883,14 @@ public class ID2JOSM {
                     case "snake_case":
                         current.snakeCase = reader.nextBoolean();
                         break;
-                    case "strings":
-                        reader.beginObject();
-                        while (reader.hasNext()) {
-                            jsonName = reader.nextName();
-                            if ("options".equals(jsonName)) {
-                                current.options = new ArrayList<>();
-                                reader.beginObject();
-                                while (reader.hasNext()) {
-                                    String value = reader.nextName();
-                                    ValueAndDescription v = new ValueAndDescription();
-                                    v.value = value;
-                                    JsonToken t = reader.peek();
-                                    if (JsonToken.STRING.equals(t)) {
-                                        v.description = reader.nextString();
-                                    } else if (JsonToken.BEGIN_OBJECT.equals(t)) {
-                                        reader.beginObject();
-                                        while (reader.hasNext()) {
-                                            jsonName = reader.nextName();
-                                            if ("title".equals(jsonName)) {
-                                                v.description = reader.nextString();
-                                            } else {
-                                                reader.skipValue();
-                                            }
-                                        }
-                                        reader.endObject();
-                                    } else {
-                                        reader.skipValue();
-                                        continue;
-                                    }
-                                    current.options.add(v);
-                                }
-                                reader.endObject();
-                            } else {
-                                reader.skipValue();
-                            }
-                        }
-                        reader.endObject();
-                        break;
                     default:
                         reader.skipValue();
                     }
                 }
                 reader.endObject();
+                if (current.label == null) {
+                    current.label = fieldTranslations.get(fieldName);
+                }
             }
             reader.endObject();
         } catch (IOException e) {
