@@ -148,7 +148,7 @@ public class ID2JOSM {
             case TYPECOMBO:
             case SEMICOMBO:
             case NETWORKCOMBO:
-            case MANYCOMBO:
+            case RADIO:
                 if (keys != null) {
                     boolean resetOptions = options == null;
                     for (ValueAndDescription key : keys) {
@@ -256,8 +256,8 @@ public class ID2JOSM {
                     }
                 }
                 break;
-            case RADIO:
-            case STRUCTURERADIO:
+            case MANYCOMBO:
+            case STRUCTURERADIO: // structureRadio should allow only one selection, JOSM doesn't support that currently
                 if (options != null) {
                     for (ValueAndDescription v : options) {
                         indent(writer, baseIndent);
@@ -269,7 +269,6 @@ public class ID2JOSM {
             default:
                 LOGGER.log(Level.WARNING, "Unhandled field: {0}", fieldType);
             }
-
         }
 
         /**
