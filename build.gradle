@@ -12,7 +12,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath "gradle.plugin.com.github.breadmoirai:github-release:2.4.1"
+        classpath "gradle.plugin.com.github.breadmoirai:github-release:2.2.11"
     }
 }
 
@@ -270,7 +270,6 @@ githubRelease {
     releaseAssets = jar.destinationDir.listFiles filter
     overwrite true
 }
-githubRelease.dependsOn fatJar
 
 build {
     dependsOn "replaceVersion"
