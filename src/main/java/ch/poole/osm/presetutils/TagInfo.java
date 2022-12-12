@@ -3,7 +3,6 @@ package ch.poole.osm.presetutils;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
@@ -25,6 +24,13 @@ public class TagInfo {
 
     public static boolean isASCII(String v) {
         return asciiEncoder.canEncode(v);
+    }
+
+    /**
+     * Private constructor
+     */
+    private TagInfo() {
+        // empty
     }
 
     /**
@@ -57,7 +63,7 @@ public class TagInfo {
             String paging = maxResults != 0 ? "&page=1&rp=" + maxResults : "";
             URL url = new URL("https://taginfo.openstreetmap.org/api/4/key/values?" + (filter != null ? "filter=" + filter + "&" : "") + "key=" + key + paging
                     + "&sortname=" + sortValue + "&sortorder=desc");
-            System.out.println(url);
+            System.err.println(url);
             is = Utils.openConnection(url);
             reader = new JsonReader(new InputStreamReader(is, "UTF-8"));
             try {
@@ -102,14 +108,14 @@ public class TagInfo {
                                         vad.value = s.trim();
                                         vad.count = count;
                                         values.add(vad);
-                                        System.out.println(vad.value);
+                                        System.err.println(vad.value);
                                     }
                                 } else {
                                     ValueAndDescription vad = new ValueAndDescription();
                                     vad.value = value.trim();
                                     vad.count = count;
                                     values.add(vad);
-                                    System.out.println(vad.value);
+                                    System.err.println(vad.value);
                                 }
                             }
                         }
@@ -120,14 +126,10 @@ public class TagInfo {
                 }
                 reader.endObject();
             } catch (IOException e) {
-                System.out.println(e.getMessage());
+                System.err.println(e.getMessage());
             }
-        } catch (MalformedURLException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
         } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            e.printStackTrace(System.err);
         } finally {
             try {
                 if (reader != null) {
@@ -187,14 +189,10 @@ public class TagInfo {
                 }
                 reader.endObject();
             } catch (IOException e) {
-                System.out.println(e.getMessage());
+                System.err.println(e.getMessage());
             }
-        } catch (MalformedURLException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
         } catch (IOException e) {
-            // TODO Auto-generated catch block
-            e.printStackTrace();
+            e.printStackTrace(System.err);
         } finally {
             try {
                 if (reader != null) {
@@ -266,15 +264,13 @@ public class TagInfo {
                 }
                 reader.endObject();
             } catch (IOException e) {
-                System.out.println(e.getMessage());
+                System.err.println(e.getMessage());
             } catch (IllegalStateException e) {
-                System.out.println(e.getMessage());
-                System.out.println(url);
+                System.err.println(e.getMessage());
+                System.err.println(url);
             }
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
         } catch (IOException e) {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
         } finally {
             try {
                 if (reader != null) {
@@ -340,12 +336,10 @@ public class TagInfo {
                 }
                 reader.endObject();
             } catch (IOException e) {
-                System.out.println(e.getMessage());
+                System.err.println(e.getMessage());
             }
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
         } catch (IOException e) {
-            e.printStackTrace();
+            e.printStackTrace(System.err);
         } finally {
             try {
                 if (reader != null) {
