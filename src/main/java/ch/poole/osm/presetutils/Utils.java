@@ -11,6 +11,13 @@ import org.jetbrains.annotations.NotNull;
 public class Utils {
 
     private static final int TIMEOUT = 20;
+    
+    /**
+     * Private constructor
+     */
+    private Utils() {
+        // empty
+    }
 
     /**
      * Given an URL open the connection and return the InputStream
@@ -21,10 +28,6 @@ public class Utils {
      */
     static InputStream openConnection(@NotNull URL url) throws IOException {
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
-        boolean isServerGzipEnabled;
-
-        // Log.d(DEBUG_TAG, "get input stream for " + url.toString());
-
         // --Start: header not yet send
         con.setReadTimeout(TIMEOUT * 1000);
         con.setConnectTimeout(TIMEOUT * 1000);
@@ -33,7 +36,7 @@ public class Utils {
         con.setInstanceFollowRedirects(true);
 
         // --Start: got response header
-        isServerGzipEnabled = "gzip".equals(con.getHeaderField("Content-encoding"));
+        boolean isServerGzipEnabled = "gzip".equals(con.getHeaderField("Content-encoding"));
 
         if (con.getResponseCode() != HttpURLConnection.HTTP_OK) {
             throw new IOException("openConnection got " + con.getResponseCode() + " " + con.getResponseMessage() + " for " + url);

@@ -12,7 +12,7 @@ buildscript {
         }
     }
     dependencies {
-        classpath "gradle.plugin.com.github.breadmoirai:github-release:2.4.1"
+        classpath "gradle.plugin.com.github.breadmoirai:github-release:2.2.11"
     }
 }
 
@@ -30,7 +30,7 @@ apply plugin: "com.github.breadmoirai.github-release"
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-version = '0.28.0'
+version = '0.29.0'
 def libName = "preset-utils"
 
 repositories {
@@ -270,7 +270,6 @@ githubRelease {
     releaseAssets = jar.destinationDir.listFiles filter
     overwrite true
 }
-githubRelease.dependsOn fatJar
 
 build {
     dependsOn "replaceVersion"
