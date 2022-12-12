@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -15,6 +16,11 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -24,6 +30,7 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.text.StringEscapeUtils;
+import org.jetbrains.annotations.NotNull;
 
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonToken;
@@ -36,7 +43,32 @@ import com.google.gson.stream.JsonToken;
  */
 public class ID2JOSM {
 
-    static final String DEBUG_TAG = "ID2JOSM";
+    private static final String DEBUG_TAG = ID2JOSM.class.getSimpleName();
+
+    private static final Logger LOGGER = Logger.getLogger(DEBUG_TAG);
+
+    private static final String PRESETURL_OPT_LONG       = "preseturl";
+    private static final String PRESETURL_OPT_SHORT      = "p";
+    private static final String FIELDSURL_OPT_LONG       = "fieldsurl";
+    private static final String FIELDSURL_OPT_SHORT      = "f";
+    private static final String JOSMONLY_OPT_LONG        = "josmonly";
+    private static final String JOSMONLY_OPT_SHORT       = "j";
+    private static final String NOTAGINFO_OPT_LONG       = "notaginfo";
+    private static final String NOTAGINFO_OPT_SHORT      = "n";
+    private static final String CHUNK_OPT_LONG           = "chunk";
+    private static final String CHUNK_OPT_SHORT          = "c";
+    private static final String OUTPUT_OPT_LONG          = "output";
+    private static final String OUTPUT_OPT_SHORT         = "o";
+    private static final String TRANSLATIONURL_OPT_LONG  = "translationurl";
+    private static final String TRANSLATIONURL_OPT_SHORT = "t";
+
+    private static final String DEFAULT_FIELD_URL       = "https://raw.githubusercontent.com/openstreetmap/id-tagging-schema/main/dist/fields.json";
+    private static final String DEFAULT_PRESET_URL      = "https://raw.githubusercontent.com/openstreetmap/id-tagging-schema/main/dist/presets.json";
+    private static final String DEFAULT_TRANSLATION_URL = "https://raw.githubusercontent.com/openstreetmap/id-tagging-schema/main/dist/translations/en.json";
+
+    private static String fieldsUrl      = DEFAULT_FIELD_URL;
+    private static String presetUrl      = DEFAULT_PRESET_URL;
+    private static String translationUrl = DEFAULT_TRANSLATION_URL;
 
     enum Geometry {
         POINT, VERTEX, LINE, AREA, RELATION;
@@ -54,11 +86,11 @@ public class ID2JOSM {
             }
             return "all";
         }
-    };
+    }
 
     enum FieldType {
-        TEXT, NUMBER, LOCALIZED, TEL, EMAIL, URL, TEXTAREA, COMBO, TYPECOMBO, MULTICOMBO, NETWORKCOMBO, SEMICOMBO, CHECK, DEFAULTCHECK, ONEWAYCHECK, RADIO, STRUCTURERADIO, ACCESS, ADDRESS, CYCLEWAY, MAXSPEED, RESTRICTIONS, WIKIPEDIA, WIKIDATA, IDENTIFIER
-    };
+        TEXT, NUMBER, LOCALIZED, TEL, EMAIL, URL, COLOUR, TEXTAREA, COMBO, TYPECOMBO, MULTICOMBO, NETWORKCOMBO, SEMICOMBO, MANYCOMBO, CHECK, DEFAULTCHECK, ONEWAYCHECK, RADIO, STRUCTURERADIO, ACCESS, ADDRESS, CYCLEWAY, MAXSPEED, RESTRICTIONS, WIKIPEDIA, WIKIDATA, IDENTIFIER, ROADHEIGHT, ROADSPEED
+    }
 
     static class Field {
         String                                 name;
@@ -86,6 +118,7 @@ public class ID2JOSM {
             case TEL:
             case EMAIL:
             case URL:
+            case COLOUR:
             case TEXTAREA:
             case ADDRESS:
             case CYCLEWAY:
@@ -94,6 +127,8 @@ public class ID2JOSM {
             case WIKIPEDIA:
             case WIKIDATA:
             case IDENTIFIER:
+            case ROADHEIGHT:
+            case ROADSPEED:
                 if (keys != null) {
                     for (ValueAndDescription key : keys) {
                         indent(writer, baseIndent);
@@ -113,6 +148,7 @@ public class ID2JOSM {
             case TYPECOMBO:
             case SEMICOMBO:
             case NETWORKCOMBO:
+            case MANYCOMBO:
                 if (keys != null) {
                     boolean resetOptions = options == null;
                     for (ValueAndDescription key : keys) {
@@ -230,7 +266,10 @@ public class ID2JOSM {
                     }
                 }
                 break;
+            default:
+                LOGGER.log(Level.WARNING, "Unhandled field: {0}", fieldType);
             }
+
         }
 
         /**
@@ -303,6 +342,7 @@ public class ID2JOSM {
     static class Item {
         public String  path;
         String         name;
+        String         icon;
         List<Geometry> geometries;
         List<Tag>      tags;
         List<Tag>      addTags;
@@ -314,7 +354,11 @@ public class ID2JOSM {
 
         public void toJosm(PrintWriter writer) {
             indent(writer, 1);
-            writer.print("<item name=\"" + StringEscapeUtils.escapeXml11(name) + "\" ");
+            String translatedName = translations.get(name);
+            writer.print("<item name=\"" + StringEscapeUtils.escapeXml11(translatedName != null ? translatedName : name) + "\" ");
+            if (icon != null) {
+                writer.print("icon=\"" + StringEscapeUtils.escapeXml11(icon) + "\" ");
+            }
             if (geometries != null) {
                 List<Geometry> temp = new ArrayList<>();
                 // squash vertex and node
@@ -356,21 +400,19 @@ public class ID2JOSM {
             }
             writer.println("preset_name_label=\"true\">");
 
-            if (reference != null) {
-                if (reference.key != null) {
-                    indent(writer, 2);
-                    if (reference.value != null) {
-                        writer.println("<link wiki=\"Tag:" + reference.key + "=" + reference.value + "\" />");
-                    } else {
-                        writer.println("<link wiki=\"Key:" + reference.key + "\" />");
-                    }
+            if (reference != null && reference.key != null) {
+                indent(writer, 2);
+                if (reference.value != null) {
+                    writer.println("<link wiki=\"Tag:" + reference.key + "=" + reference.value + "\" />");
+                } else {
+                    writer.println("<link wiki=\"Key:" + reference.key + "\" />");
                 }
             }
 
             List<Tag> tempTags = (tags == null ? new ArrayList<Tag>() : new ArrayList<>(tags));
 
             // try to keep top level tags on top
-            if (addTags != null) {
+            if (addTags != null && tags != null) {
                 for (Tag tag : addTags) {
                     if (!(tags.contains(tag))) {
                         if (Tags.OBJECT_KEYS.contains(tag.key)) {
@@ -446,6 +488,8 @@ public class ID2JOSM {
 
     static LinkedHashMap<String, Item> items = new LinkedHashMap<>();
 
+    private static Map<String, String> translations = new HashMap<>();
+
     private static boolean chunkMode    = false;
     private static boolean tagInfoMode  = true;
     private static boolean josmOnlyMode = false;
@@ -454,374 +498,401 @@ public class ID2JOSM {
      * @param printWriter
      * @return
      */
-    static void convertId(PrintWriter printWriter) {
-        // Log.d("DiscardedTags","Parsing configuration file");
-
-        InputStream is = null;
-        JsonReader reader = null;
+    static void convertId(@NotNull PrintWriter printWriter) {
         try {
-            // field definitions read 1st
-            // https://raw.githubusercontent.com/openstreetmap/iD/master/data/presets/fields.json
-            // URL url = new URL("https://raw.githubusercontent.com/openstreetmap/iD/master/data/presets/fields.json");
-            URL url = new URL("https://github.com/openstreetmap/iD/raw/develop/data/presets/fields.json");
-            is = Utils.openConnection(url);
-            reader = new JsonReader(new InputStreamReader(is, "UTF-8"));
-            try {
-                reader.beginObject();
-                // if (reader.hasNext()) {
-                // String jsonName = reader.nextName();
-                // if ("fields".equals(jsonName)) {
-                // reader.beginObject();
-                while (reader.hasNext()) {
-                    String jsonName = reader.nextName();
-                    Field current = new Field();
-                    fields.put(jsonName, current);
-                    current.name = jsonName;
-                    fieldKeys.put(current, jsonName);
-                    reader.beginObject();
-                    while (reader.hasNext()) {
-                        switch (reader.nextName()) {
-                        case "label":
-                            current.label = reader.nextString();
-                            break;
-                        case "type":
-                            current.fieldType = FieldType.valueOf(reader.nextString().toUpperCase());
-                            break;
-                        case "default":
-                            current.defaultValue = reader.nextString();
-                            break;
-                        case "geometry":
-                            reader.beginArray();
-                            current.geometry = new ArrayList<>();
-                            while (reader.hasNext()) {
-                                current.geometry.add(Geometry.valueOf(reader.nextString().toUpperCase()));
-                            }
-                            reader.endArray();
-                            break;
-                        case "key":
-                            current.keys = new ArrayList<>();
-                            ValueAndDescription key = new ValueAndDescription();
-                            key.value = reader.nextString();
-                            current.keys.add(key);
-                            break;
-                        case "keys":
-                            reader.beginArray();
-                            current.keys = new ArrayList<>();
-                            while (reader.hasNext()) {
-                                key = new ValueAndDescription();
-                                key.value = reader.nextString();
-                                current.keys.add(key);
-                            }
-                            reader.endArray();
-                            break;
-                        case "options":
-                            reader.beginArray();
-                            current.options = new ArrayList<>();
-                            while (reader.hasNext()) {
-                                ValueAndDescription value = new ValueAndDescription();
-                                value.value = reader.nextString();
-                                current.options.add(value);
-                            }
-                            reader.endArray();
-                            break;
-                        case "caseSensitive":
-                            current.caseSensitive = reader.nextBoolean();
-                            break;
-                        case "snake_case":
-                            current.snakeCase = reader.nextBoolean();
-                            break;
-                        case "strings":
-                            reader.beginObject();
-                            while (reader.hasNext()) {
-                                jsonName = reader.nextName();
-                                if ("options".equals(jsonName)) {
-                                    current.options = new ArrayList<>();
-                                    reader.beginObject();
-                                    while (reader.hasNext()) {
-                                        String value = reader.nextName();
-                                        ValueAndDescription v = new ValueAndDescription();
-                                        v.value = value;
-                                        JsonToken t = reader.peek();
-                                        if (JsonToken.STRING.equals(t)) {
-                                            v.description = reader.nextString();
-                                        } else if (JsonToken.BEGIN_OBJECT.equals(t)) {
-                                            reader.beginObject();
-                                            while (reader.hasNext()) {
-                                                jsonName = reader.nextName();
-                                                if ("title".equals(jsonName)) {
-                                                    v.description = reader.nextString();
-                                                } else {
-                                                    reader.skipValue();
-                                                }
-                                            }
-                                            reader.endObject();
-                                        } else {
-                                            reader.skipValue();
-                                            continue;
-                                        }
-                                        current.options.add(v);
-                                    }
-                                    reader.endObject();
-                                } else {
-                                    reader.skipValue();
-                                }
-                            }
-                            reader.endObject();
-                            break;
-                        default:
-                            reader.skipValue();
-                        }
-                    }
-                    reader.endObject();
-                }
-                // reader.endObject();
-                // } else {
-                // reader.skipValue();
-                // }
-                // }
-                reader.endObject();
-            } catch (IOException e) {
-                System.out.println(e.getMessage());
-            }
+            parseIdFields(new URL(fieldsUrl));
+            parseIdPreset(new URL(presetUrl));
+            parseIdTranslation(new URL(translationUrl));
 
-            // presets def
-            // "https://raw.githubusercontent.com/openstreetmap/iD/master/data/presets/presets.json"
-            // url = new URL("https://raw.githubusercontent.com/openstreetmap/iD/master/data/presets/presets.json");
-            url = new URL("https://github.com/openstreetmap/iD/raw/develop/data/presets/presets.json");
-            is = Utils.openConnection(url);
-            reader = new JsonReader(new InputStreamReader(is, "UTF-8"));
-            try {
-                reader.beginObject();
-                // if (reader.hasNext()) {
-                // String jsonName = reader.nextName();
-                // if ("presets".equals(jsonName)) {
-                // reader.beginObject();
-                while (reader.hasNext()) {
-                    String jsonName = reader.nextName();
-                    Item current = new Item();
-                    current.path = jsonName;
-                    reader.beginObject();
-                    boolean save = true;
-                    while (reader.hasNext()) {
-                        switch (reader.nextName()) {
-                        case "name":
-                            current.name = reader.nextString();
-                            break;
-                        case "searchable":
-                            current.searchable = reader.nextBoolean();
-                            break;
-                        case "tags":
-                            reader.beginObject();
-                            current.tags = new ArrayList<>();
-                            while (reader.hasNext()) {
-                                Tag tag = new Tag();
-                                tag.key = reader.nextName();
-                                tag.value = reader.nextString();
-                                current.tags.add(tag);
-                                if (("name".equals(tag.key) || "brand:wikidata".equals(tag.key)) && tag.value != null && !"".equals(tag.value)) {
-                                    save = false; // this removes entries generated from the name suggestion
-                                                  // index
-                                }
-                            }
-                            reader.endObject();
-                            break;
-                        case "addTags":
-                            reader.beginObject();
-                            current.addTags = new ArrayList<>();
-                            while (reader.hasNext()) {
-                                Tag tag = new Tag();
-                                tag.key = reader.nextName();
-                                tag.value = reader.nextString();
-                                current.addTags.add(tag);
-                            }
-                            reader.endObject();
-                            break;
-                        case "removeTags":
-                            reader.beginObject();
-                            current.removeTags = new ArrayList<>();
-                            while (reader.hasNext()) {
-                                Tag tag = new Tag();
-                                tag.key = reader.nextName();
-                                tag.value = reader.nextString();
-                                current.removeTags.add(tag);
-                            }
-                            reader.endObject();
-                            break;
-                        case "geometry":
-                            reader.beginArray();
-                            current.geometries = new ArrayList<>();
-                            while (reader.hasNext()) {
-                                current.geometries.add(Geometry.valueOf(reader.nextString().toUpperCase()));
-                            }
-                            reader.endArray();
-                            break;
-                        case "fields":
-                            reader.beginArray();
-                            current.fields = new ArrayList<Field>();
-                            List<String> tagKeys = current.tagKeys();
-                            while (reader.hasNext()) {
-                                String fieldName = reader.nextString();
-                                addFields(current.fields, tagKeys, fieldName);
-                            }
-                            reader.endArray();
-                            break;
-                        case "moreFields":
-                            reader.beginArray();
-                            current.moreFields = new ArrayList<Field>();
-                            tagKeys = current.tagKeys();
-                            while (reader.hasNext()) {
-                                String fieldName = reader.nextString();
-                                addFields(current.moreFields, tagKeys, fieldName);
-                            }
-                            reader.endArray();
-                            break;
-                        case "reference":
-                            reader.beginObject();
-                            current.reference = new Tag();
-                            while (reader.hasNext()) {
-                                switch (reader.nextName()) {
-                                case "key":
-                                    current.reference.key = reader.nextString();
-                                    break;
-                                case "value":
-                                    current.reference.value = reader.nextString();
-                                    break;
-                                }
-                            }
-                            reader.endObject();
-                            break;
-                        case "matchScore":
-                        case "countryCodes":
-                        case "replacement":
-                        case "icon":
-                        case "imageURL":
-                        case "terms":
-                        default:
-                            reader.skipValue();
+            // print out
+            printWriter.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
+            printWriter.println("<presets xmlns=\"http://josm.openstreetmap.de/tagging-preset-1.0\"" + " shortdescription=\"iD presets\" description=\"\">");
+            if (chunkMode) {
+                for (String fieldName : fields.keySet()) {
+                    Field field = fields.get(fieldName);
+                    if (field != null) {
+                        indent(printWriter, 1);
+                        printWriter.println("<chunk id=\"" + fieldName + "\">");
+                        try {
+                            field.toJosm(printWriter, null);
+                        } catch (Exception ex) {
+                            LOGGER.log(Level.SEVERE, "Error writing field {0}: {1}", new Object[] { fieldName, ex.getMessage() });
+                            ex.printStackTrace();
                         }
-                    }
-                    if (save) {
-                        items.put(current.path, current);
-                        if ((current.fields == null || current.fields.isEmpty()) && (current.moreFields == null || current.moreFields.isEmpty())) {
-                            // implicit inheritance
-                            int lastSlash = current.path.lastIndexOf('/');
-                            if (lastSlash > 0) {
-                                String parentPath = current.path.substring(0, lastSlash);
-                                Item parent = items.get(parentPath);
-                                if (parent != null) {
-                                    List<String> tagKeys = current.tagKeys();
-                                    current.fields = new ArrayList<>();
-                                    if (parent.fields != null) {
-                                        for (Field f : parent.fields) {
-                                            addFields(current.fields, tagKeys, f.name);
-                                        }
-                                    }
-                                    if (parent.moreFields != null) {
-                                        current.moreFields = new ArrayList<>();
-                                        for (Field f : parent.moreFields) {
-                                            addFields(current.moreFields, tagKeys, f.name);
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        // remove duplicate tags/fields, can't do this before parsing the item is finished
-                        if (current.tags != null && current.fields != null) {
-                            for (Tag t : new ArrayList<>(current.tags)) {
-                                for (Field f : new ArrayList<>(current.fields)) {
-                                    for (ValueAndDescription vad : f.keys) {
-                                        if (vad.value.equals(t.key)) {
-                                            if ("*".equals(t.value)) {
-                                                current.tags.remove(t); // remove the tag
-                                            } else {
-                                                // we can't actually check against the values here as the
-                                                // taginfo queries haven't run yet
-                                                current.fields.remove(f); // remove field
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    reader.endObject();
-                }
-                // reader.endObject();
-                // } else {
-                // reader.skipValue();
-                // }
-                // }
-                reader.endObject();
-
-                // print out
-                printWriter.println("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
-                printWriter
-                        .println("<presets xmlns=\"http://josm.openstreetmap.de/tagging-preset-1.0\"" + " shortdescription=\"iD presets\" description=\"\">");
-                if (chunkMode) {
-                    for (String fieldName : fields.keySet()) {
-                        Field field = fields.get(fieldName);
-                        if (field != null) {
-                            indent(printWriter, 1);
-                            printWriter.println("<chunk id=\"" + fieldName + "\">");
-                            try {
-                                field.toJosm(printWriter, null);
-                            } catch (Exception ex) {
-                                System.out.println("Exception for " + fieldName);
-                                ex.printStackTrace();
-                            }
-                            indent(printWriter, 1);
-                            printWriter.println("</chunk>");
-                        }
+                        indent(printWriter, 1);
+                        printWriter.println("</chunk>");
                     }
                 }
-                for (Item item : items.values()) {
-                    try {
-                        item.toJosm(printWriter);
-                    } catch (Exception ex) {
-                        System.out.println("Exception for " + item.name);
-                        ex.printStackTrace();
-                    }
-                }
-                printWriter.println("</presets>");
-                printWriter.close();
-            } catch (IOException e) {
-                System.out.println(e.getMessage());
             }
-        } catch (
-
-        IOException e) {
-            System.out.println(e.getMessage());
-        } finally {
-            try {
-                if (reader != null) {
-                    reader.close();
+            for (Item item : items.values()) {
+                try {
+                    item.toJosm(printWriter);
+                } catch (Exception ex) {
+                    LOGGER.log(Level.SEVERE, "Error writing item {0}: {1}", new Object[] { item.name, ex.getMessage() });
                 }
-            } catch (IOException ioex) {
             }
-            try {
-                if (is != null) {
-                    is.close();
-                }
-            } catch (IOException ioex) {
-            }
+            printWriter.println("</presets>");
+            printWriter.close();
+        } catch (MalformedURLException e) {
+            LOGGER.log(Level.SEVERE, "Invalid URL: {0}", e.getMessage());
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "Problem converting presets: {0}", e.getMessage());
         }
     }
 
     /**
-     * @param itemFields
-     * @param tagKeys
-     * @param fieldName
+     * Retrieve and parse an iD translations files
+     * 
+     * @param url url for the translation file
+     * @throws IOException if something goes wrong
      */
-    public static void addFields(Item item, List<Field> itemFields, List<String> tagKeys, String fieldName) {
-        addFields(itemFields, tagKeys, fieldName);
+    private static void parseIdTranslation(@NotNull URL url) throws IOException {
+        try (InputStream is = Utils.openConnection(url); JsonReader reader = new JsonReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+            reader.beginObject();
+            if (reader.hasNext()) {
+                String jsonName = reader.nextName();
+                reader.beginObject();
+                while (reader.hasNext()) {
+                    jsonName = reader.nextName();
+                    if ("presets".equals(jsonName)) {
+                        reader.beginObject();
+                        while (reader.hasNext()) {
+                            if ("presets".equals(reader.nextName())) {
+                                reader.beginObject();
+                                while (reader.hasNext()) {
+                                    String presetName = reader.nextName();
+                                    reader.beginObject();
+                                    while (reader.hasNext()) {
+                                        if ("name".equals(reader.nextName())) {
+                                            translations.put(presetName, reader.nextString());
+                                        } else {
+                                            reader.skipValue();
+                                        }
+                                    }
+                                    reader.endObject();
+                                }
+                                reader.endObject();
+                            } else {
+                                reader.skipValue();
+                            }
+                        }
+                        reader.endObject();
+                    } else {
+                        reader.skipValue();
+                    }
+                    reader.endObject();
+                }
+            }
+            reader.endObject();
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "Error reading translations: {0}", e.getMessage());
+            throw e;
+        }
     }
 
     /**
-     * @param itemFields
-     * @param tagKeys
-     * @param fieldName
+     * Retrieve and parse an iD preset file
+     * 
+     * @see <a href="https://github.com/ideditor/schema-builder/blob/main/schemas/preset.json">idpreset schema</a>
+     * 
+     * @param url url for the preset file
+     * @throws IOException if something goes wrong
      */
-    public static void addFields(List<Field> itemFields, List<String> tagKeys, String fieldName) {
+    private static void parseIdPreset(@NotNull URL url) throws IOException {
+        try (InputStream is = Utils.openConnection(url); JsonReader reader = new JsonReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+            reader.beginObject();
+            while (reader.hasNext()) {
+                String jsonName = reader.nextName();
+                Item current = new Item();
+                current.path = jsonName;
+                current.name = jsonName;
+                reader.beginObject();
+                boolean save = true;
+                while (reader.hasNext()) {
+                    switch (reader.nextName()) {
+                    case "icon":
+                        String icon = reader.nextString();
+                        if (icon != null && !"".equals(icon)) {
+                            current.icon = icon;
+                        }
+                        break;
+                    case "searchable":
+                        current.searchable = reader.nextBoolean();
+                        break;
+                    case "tags":
+                        reader.beginObject();
+                        current.tags = new ArrayList<>();
+                        while (reader.hasNext()) {
+                            Tag tag = new Tag();
+                            tag.key = reader.nextName();
+                            tag.value = reader.nextString();
+                            current.tags.add(tag);
+                            if (("name".equals(tag.key) || "brand:wikidata".equals(tag.key)) && tag.value != null && !"".equals(tag.value)) {
+                                save = false; // this removes entries generated from the name suggestion
+                                              // index
+                            }
+                        }
+                        reader.endObject();
+                        break;
+                    case "addTags":
+                        reader.beginObject();
+                        current.addTags = new ArrayList<>();
+                        while (reader.hasNext()) {
+                            Tag tag = new Tag();
+                            tag.key = reader.nextName();
+                            tag.value = reader.nextString();
+                            current.addTags.add(tag);
+                        }
+                        reader.endObject();
+                        break;
+                    case "removeTags":
+                        reader.beginObject();
+                        current.removeTags = new ArrayList<>();
+                        while (reader.hasNext()) {
+                            Tag tag = new Tag();
+                            tag.key = reader.nextName();
+                            tag.value = reader.nextString();
+                            current.removeTags.add(tag);
+                        }
+                        reader.endObject();
+                        break;
+                    case "geometry":
+                        reader.beginArray();
+                        current.geometries = new ArrayList<>();
+                        while (reader.hasNext()) {
+                            current.geometries.add(Geometry.valueOf(reader.nextString().toUpperCase()));
+                        }
+                        reader.endArray();
+                        break;
+                    case "fields":
+                        reader.beginArray();
+                        current.fields = new ArrayList<>();
+                        List<String> tagKeys = current.tagKeys();
+                        while (reader.hasNext()) {
+                            String fieldName = reader.nextString();
+                            addFields(current.fields, tagKeys, fieldName);
+                        }
+                        reader.endArray();
+                        break;
+                    case "moreFields":
+                        reader.beginArray();
+                        current.moreFields = new ArrayList<>();
+                        tagKeys = current.tagKeys();
+                        while (reader.hasNext()) {
+                            String fieldName = reader.nextString();
+                            addFields(current.moreFields, tagKeys, fieldName);
+                        }
+                        reader.endArray();
+                        break;
+                    case "reference":
+                        reader.beginObject();
+                        current.reference = new Tag();
+                        while (reader.hasNext()) {
+                            switch (reader.nextName()) {
+                            case "key":
+                                current.reference.key = reader.nextString();
+                                break;
+                            case "value":
+                                current.reference.value = reader.nextString();
+                                break;
+                            }
+                        }
+                        reader.endObject();
+                        break;
+                    case "matchScore":
+                    case "countryCodes":
+                    case "replacement":
+                    case "imageURL":
+                    case "terms":
+                    default:
+                        reader.skipValue();
+                    }
+                }
+                if (save) {
+                    items.put(current.path, current);
+                    if ((current.fields == null || current.fields.isEmpty()) && (current.moreFields == null || current.moreFields.isEmpty())) {
+                        // implicit inheritance
+                        int lastSlash = current.path.lastIndexOf('/');
+                        if (lastSlash > 0) {
+                            String parentPath = current.path.substring(0, lastSlash);
+                            Item parent = items.get(parentPath);
+                            if (parent != null) {
+                                List<String> tagKeys = current.tagKeys();
+                                current.fields = new ArrayList<>();
+                                if (parent.fields != null) {
+                                    for (Field f : parent.fields) {
+                                        addFields(current.fields, tagKeys, f.name);
+                                    }
+                                }
+                                if (parent.moreFields != null) {
+                                    current.moreFields = new ArrayList<>();
+                                    for (Field f : parent.moreFields) {
+                                        addFields(current.moreFields, tagKeys, f.name);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    // remove duplicate tags/fields, can't do this before parsing the item is finished
+                    if (current.tags != null && current.fields != null) {
+                        for (Tag t : new ArrayList<>(current.tags)) {
+                            for (Field f : new ArrayList<>(current.fields)) {
+                                if (f.keys == null) {
+                                    LOGGER.log(Level.WARNING, "keys is null for field {0} item {1}", new Object[] { f.name, current.name });
+                                    continue;
+                                }
+                                for (ValueAndDescription vad : f.keys) {
+                                    if (vad.value.equals(t.key)) {
+                                        if ("*".equals(t.value)) {
+                                            current.tags.remove(t); // remove the tag
+                                        } else {
+                                            // we can't actually check against the values here as the
+                                            // taginfo queries haven't run yet
+                                            current.fields.remove(f); // remove field
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                reader.endObject();
+            }
+            reader.endObject();
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "Error reading preset: {0}", e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Retrieve and parse an iD field definitions file
+     * 
+     * @see <a href="https://github.com/ideditor/schema-builder/blob/main/schemas/field.json">iD field schema</a>
+     * 
+     * @param url url for the field file
+     * @throws IOException if something goes wrong
+     */
+    private static void parseIdFields(@NotNull URL url) throws IOException {
+        try (InputStream is = Utils.openConnection(url); JsonReader reader = new JsonReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+            reader.beginObject();
+            while (reader.hasNext()) {
+                String jsonName = reader.nextName();
+                Field current = new Field();
+                fields.put(jsonName, current);
+                current.name = jsonName;
+                fieldKeys.put(current, jsonName);
+                reader.beginObject();
+                while (reader.hasNext()) {
+                    switch (reader.nextName()) {
+                    case "label":
+                        current.label = reader.nextString();
+                        break;
+                    case "type":
+                        current.fieldType = FieldType.valueOf(reader.nextString().toUpperCase());
+                        break;
+                    case "default":
+                        current.defaultValue = reader.nextString();
+                        break;
+                    case "geometry":
+                        reader.beginArray();
+                        current.geometry = new ArrayList<>();
+                        while (reader.hasNext()) {
+                            current.geometry.add(Geometry.valueOf(reader.nextString().toUpperCase()));
+                        }
+                        reader.endArray();
+                        break;
+                    case "key":
+                        current.keys = new ArrayList<>();
+                        ValueAndDescription key = new ValueAndDescription();
+                        key.value = reader.nextString();
+                        current.keys.add(key);
+                        break;
+                    case "keys":
+                        reader.beginArray();
+                        current.keys = new ArrayList<>();
+                        while (reader.hasNext()) {
+                            key = new ValueAndDescription();
+                            key.value = reader.nextString();
+                            current.keys.add(key);
+                        }
+                        reader.endArray();
+                        break;
+                    case "options":
+                        reader.beginArray();
+                        current.options = new ArrayList<>();
+                        while (reader.hasNext()) {
+                            ValueAndDescription value = new ValueAndDescription();
+                            value.value = reader.nextString();
+                            current.options.add(value);
+                        }
+                        reader.endArray();
+                        break;
+                    case "caseSensitive":
+                        current.caseSensitive = reader.nextBoolean();
+                        break;
+                    case "snake_case":
+                        current.snakeCase = reader.nextBoolean();
+                        break;
+                    case "strings":
+                        reader.beginObject();
+                        while (reader.hasNext()) {
+                            jsonName = reader.nextName();
+                            if ("options".equals(jsonName)) {
+                                current.options = new ArrayList<>();
+                                reader.beginObject();
+                                while (reader.hasNext()) {
+                                    String value = reader.nextName();
+                                    ValueAndDescription v = new ValueAndDescription();
+                                    v.value = value;
+                                    JsonToken t = reader.peek();
+                                    if (JsonToken.STRING.equals(t)) {
+                                        v.description = reader.nextString();
+                                    } else if (JsonToken.BEGIN_OBJECT.equals(t)) {
+                                        reader.beginObject();
+                                        while (reader.hasNext()) {
+                                            jsonName = reader.nextName();
+                                            if ("title".equals(jsonName)) {
+                                                v.description = reader.nextString();
+                                            } else {
+                                                reader.skipValue();
+                                            }
+                                        }
+                                        reader.endObject();
+                                    } else {
+                                        reader.skipValue();
+                                        continue;
+                                    }
+                                    current.options.add(v);
+                                }
+                                reader.endObject();
+                            } else {
+                                reader.skipValue();
+                            }
+                        }
+                        reader.endObject();
+                        break;
+                    default:
+                        reader.skipValue();
+                    }
+                }
+                reader.endObject();
+            }
+            reader.endObject();
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "Error reading fields: {0}", e.getMessage());
+            throw e;
+        }
+    }
+
+    /**
+     * Add a field to a preset item
+     * 
+     * @param itemFields the list of fields
+     * @param tagKeys keys
+     * @param fieldName field name
+     */
+    public static void addFields(@NotNull List<Field> itemFields, @NotNull List<String> tagKeys, @NotNull String fieldName) {
         if (fieldName.charAt(0) == '{' && fieldName.charAt(fieldName.length() - 1) == '}') {
             String refItemName = fieldName.substring(1, fieldName.length() - 1);
             Item refItem = items.get(refItemName);
@@ -856,15 +927,25 @@ public class ID2JOSM {
     }
 
     public static void main(String[] args) {
-        OutputStream os = System.out;
+        // set up logging
+        LogManager.getLogManager().reset();
+        SimpleFormatter fmt = new SimpleFormatter();
+        Handler stderrHandler = new FlushStreamHandler(System.err, fmt); // NOSONAR
+        stderrHandler.setLevel(Level.INFO);
+        LOGGER.addHandler(stderrHandler);
 
-        Option outputFile = Option.builder("o").longOpt("output").hasArg().desc("output .xml file, default: standard out").build();
+        OutputStream os = System.out; // NOSONAR
 
-        Option chunk = Option.builder("c").longOpt("chunk").desc("output id fields as chunks").build();
-
-        Option noTagInfo = Option.builder("n").longOpt("notaginfo").desc("don't query taginfo for keys and values").build();
-
-        Option josmOnlyOpt = Option.builder("j").longOpt("josmonly").desc("don't use Vespucci extensions").build();
+        Option outputFile = Option.builder(OUTPUT_OPT_SHORT).longOpt(OUTPUT_OPT_LONG).hasArg().desc("output .xml file, default: standard out").build();
+        Option chunk = Option.builder(CHUNK_OPT_SHORT).longOpt(CHUNK_OPT_LONG).desc("output id fields as chunks").build();
+        Option noTagInfo = Option.builder(NOTAGINFO_OPT_SHORT).longOpt(NOTAGINFO_OPT_LONG).desc("don't query taginfo for keys and values").build();
+        Option josmOnlyOpt = Option.builder(JOSMONLY_OPT_SHORT).longOpt(JOSMONLY_OPT_LONG).desc("don't use Vespucci extensions").build();
+        Option fieldsUrlOpt = Option.builder(FIELDSURL_OPT_SHORT).longOpt(FIELDSURL_OPT_LONG).hasArg().desc("url for alternative location of field definitions")
+                .build();
+        Option presetUrlOpt = Option.builder(PRESETURL_OPT_SHORT).longOpt(PRESETURL_OPT_LONG).hasArg()
+                .desc("url for alternative location of preset definitions").build();
+        Option translationUrlOpt = Option.builder(TRANSLATIONURL_OPT_SHORT).longOpt(TRANSLATIONURL_OPT_LONG).hasArg()
+                .desc("url for alternative location of preset translations").build();
 
         Options options = new Options();
 
@@ -872,35 +953,36 @@ public class ID2JOSM {
         options.addOption(chunk);
         options.addOption(noTagInfo);
         options.addOption(josmOnlyOpt);
+        options.addOption(fieldsUrlOpt);
+        options.addOption(presetUrlOpt);
+        options.addOption(translationUrlOpt);
 
         CommandLineParser parser = new DefaultParser();
         try {
-            try {
-                // parse the command line arguments
-                CommandLine line = parser.parse(options, args);
-                if (line.hasOption("o")) {
-                    String output = line.getOptionValue("output");
-                    os = new FileOutputStream(output);
-                }
-                chunkMode = line.hasOption("c");
-                tagInfoMode = !line.hasOption("n");
-                josmOnlyMode = line.hasOption('j');
-            } catch (ParseException exp) {
-                HelpFormatter formatter = new HelpFormatter();
-                formatter.printHelp("ID2JOSM", options);
-                return;
-            } catch (FileNotFoundException e) {
-                System.err.println("File not found: " + e.getMessage());
-                return;
+            // parse the command line arguments
+            CommandLine line = parser.parse(options, args);
+            if (line.hasOption(OUTPUT_OPT_SHORT)) {
+                String output = line.getOptionValue(OUTPUT_OPT_LONG);
+                os = new FileOutputStream(output);
+            }
+            chunkMode = line.hasOption(CHUNK_OPT_SHORT);
+            tagInfoMode = !line.hasOption(NOTAGINFO_OPT_SHORT);
+            josmOnlyMode = line.hasOption(JOSMONLY_OPT_SHORT);
+            if (line.hasOption(FIELDSURL_OPT_SHORT)) {
+                fieldsUrl = line.getOptionValue(FIELDSURL_OPT_LONG);
+            }
+            if (line.hasOption(PRESETURL_OPT_SHORT)) {
+                presetUrl = line.getOptionValue(PRESETURL_OPT_LONG);
+            }
+            if (line.hasOption(TRANSLATIONURL_OPT_SHORT)) {
+                translationUrl = line.getOptionValue(TRANSLATIONURL_OPT_LONG);
             }
             convertId(new PrintWriter(new OutputStreamWriter(os, StandardCharsets.UTF_8)));
-        } finally {
-            try {
-                os.close();
-            } catch (IOException e) {
-                // NOSONAR
-            }
+        } catch (ParseException exp) {
+            HelpFormatter formatter = new HelpFormatter();
+            formatter.printHelp(DEBUG_TAG, options);
+        } catch (FileNotFoundException e) {
+            LOGGER.log(Level.SEVERE, "File not found: {0}", e.getMessage());
         }
-
     }
 }
