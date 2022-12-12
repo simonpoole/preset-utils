@@ -58,7 +58,9 @@ Retrieve synonym values from the iD editor repository and output a json object c
 
 Generate a JOSM preset from the iD preset configuration, retrieving some values from taginfo similar to what iD does.
 
-Note this does not include any icons from the preset (but it does include references) and while it is mainly useful for statistical and comparison purposes, the output is fully functional.
+Note: 
+- this does not include any icons from the preset (but it does include references) and while it is mainly useful for statistical and comparison purposes, the output is fully functional.
+- if querying taginfo is not turned off, a fair bit of debugging output is written and the querying is rate limited (aka slow).
 
 Currently ignored iD preset features are "matchScore", "countryCodes", "replacement", "removeTags", "icon", "imageURL" and "terms" (the Synonym tool can be used to turn the term field in to something useful).
 
