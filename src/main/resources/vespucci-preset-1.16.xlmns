@@ -555,7 +555,7 @@
     
     <simpleType name="value_type">
         <annotation>
-            <documentation><![CDATA
+            <documentation><![CDATA[
                 Type of the value, used to select the best method of data entry.
             ]]></documentation>
         </annotation>
