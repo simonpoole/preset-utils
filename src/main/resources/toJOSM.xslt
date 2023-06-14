@@ -8,6 +8,18 @@
             <xsl:text> (deprecated)</xsl:text>
         </xsl:attribute>
     </xsl:template>
+    <xsl:template match="@text[../@deprecated]">
+        <xsl:attribute name="text">
+            <xsl:value-of select="." />
+            <xsl:text> (deprecated)</xsl:text>
+        </xsl:attribute>
+    </xsl:template>
+    <xsl:template match="@display_value[../@deprecated]">
+        <xsl:attribute name="display_value">
+            <xsl:value-of select="." />
+            <xsl:text> (deprecated)</xsl:text>
+        </xsl:attribute>
+    </xsl:template>
     <xsl:template match="@short_description[../@deprecated]">
         <xsl:attribute name="short_description">
             <xsl:value-of select="." />
