@@ -89,7 +89,9 @@ public class ID2JOSM {
     }
 
     enum FieldType {
-        TEXT, NUMBER, LOCALIZED, TEL, EMAIL, URL, COLOUR, TEXTAREA, COMBO, TYPECOMBO, MULTICOMBO, NETWORKCOMBO, SEMICOMBO, MANYCOMBO, CHECK, DEFAULTCHECK, ONEWAYCHECK, RADIO, STRUCTURERADIO, ACCESS, ADDRESS, CYCLEWAY, MAXSPEED, RESTRICTIONS, WIKIPEDIA, WIKIDATA, IDENTIFIER, ROADHEIGHT, ROADSPEED
+        TEXT, NUMBER, DATE, LOCALIZED, TEL, EMAIL, URL, COLOUR, TEXTAREA, COMBO, TYPECOMBO, MULTICOMBO, 
+        NETWORKCOMBO, SEMICOMBO, MANYCOMBO, DIRECTIONALCOMBO, CHECK, DEFAULTCHECK, ONEWAYCHECK, RADIO, STRUCTURERADIO, 
+        ACCESS, ADDRESS, CYCLEWAY, MAXSPEED, RESTRICTIONS, WIKIPEDIA, WIKIDATA, IDENTIFIER, ROADHEIGHT, ROADSPEED
     }
 
     static class Field {
@@ -114,6 +116,7 @@ public class ID2JOSM {
             switch (fieldType) {
             case TEXT:
             case NUMBER:
+            case DATE:
             case LOCALIZED:
             case TEL:
             case EMAIL:
@@ -148,6 +151,7 @@ public class ID2JOSM {
             case TYPECOMBO:
             case SEMICOMBO:
             case NETWORKCOMBO:
+            case DIRECTIONALCOMBO:
             case RADIO:
                 if (keys != null) {
                     boolean resetOptions = options == null;
