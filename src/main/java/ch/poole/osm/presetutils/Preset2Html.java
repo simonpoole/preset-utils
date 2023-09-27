@@ -78,7 +78,8 @@ public class Preset2Html {
              */
             @Override
             public void startElement(String uri, String localName, String name, Attributes attr) throws SAXException {
-                if ("presets".equals(name)) {
+                switch (name) {
+                case "presets":
                     String shortdescription = attr.getValue("shortdescription");
                     if (shortdescription == null) {
                         pw.write("<h1>Presets from File " + inputFilename + "</h1>\n");
@@ -98,7 +99,8 @@ public class Preset2Html {
                         pw.write("<div class=\"download\"><a href=\"" + josmLink + "\">Download link for JOSM</a></div>\n");
                     }
                     pw.write("<p />");
-                } else if ("group".equals(name)) {
+                    break;
+                case "group":
                     groupCount++;
                     group = attr.getValue("name");
                     buffer.append("<div class=\"group\"><h" + (groupCount + 1) + ">");
@@ -114,27 +116,38 @@ public class Preset2Html {
                     if (groupCount == 1) {
                         pw.write("<a href=\"#" + group + "\">" + group + "</a> ");
                     }
-                } else if ("item".equals(name)) {
+                    break;
+                case "item":
                     preset = attr.getValue("name");
                     icon = attr.getValue("icon");
                     if (icon != null && !"".equals(icon)) {
                         icon2 = icon.replace("${ICONPATH}", "icons/png/");
                         icon2 = icon2.replace("${ICONTYPE}", "png");
                     }
-                } else if ("chunk".equals(name)) {
+                    break;
+                case "chunk":
                     chunk = attr.getValue("id");
                     keys = "";
-                } else if ("separator".equals(name)) {
-                } else if ("label".equals(name)) {
-                } else if ("optional".equals(name)) {
+                    break;
+                case "separator":
+                    break;
+                case "label":
+                    break;
+                case "optional":
                     optional = true;
-                } else if ("key".equals(name) || "multiselect".equals(name) || "combo".equals(name) || "check".equals(name) || "text".equals(name)) {
+                    break;
+                case "key":
+                case "multiselect":
+                case "combo":
+                case "check":
+                case "text":
                     if (!optional) {
                         keys = addTags(keys, attr);
                     } else {
                         optionalKeys = addTags(optionalKeys, attr);
                     }
-                } else if ("preset_link".equals(name)) {
+                    break;
+                case "preset_link":
                     String link = attr.getValue("preset_name");
                     if (link != null) {
                         if (links == null) {
@@ -143,7 +156,8 @@ public class Preset2Html {
                             links = links + "<BR>" + link;
                         }
                     }
-                } else if ("role".equals(name)) {
+                    break;
+                case "role":
                     String role = attr.getValue("key");
                     if (role != null && !"".equals(role)) {
                         if (roles == null) {
@@ -152,7 +166,8 @@ public class Preset2Html {
                             roles = roles + "<BR>" + role;
                         }
                     }
-                } else if ("reference".equals(name)) {
+                    break;
+                case "reference":
                     String ref = attr.getValue("ref");
                     String refKeys = chunkKeys.get(ref);
                     if (refKeys != null) {
@@ -200,7 +215,10 @@ public class Preset2Html {
                             && (refLinks == null || "".equals(refLinks)) && (refRoles == null || "".equals(refRoles))) {
                         System.err.println(ref + " was not found for preset " + preset);
                     }
-                } else if ("list_entry".equals(name)) {
+                    break;
+                case "list_entry":
+                default:
+                    // nothing
                 }
             }
 
@@ -219,13 +237,16 @@ public class Preset2Html {
 
             @Override
             public void endElement(String uri, String localMame, String name) throws SAXException {
-                if ("group".equals(name)) {
+                switch (name) {
+                case "group":
                     group = null;
-                    buffer.append("</div><p />\n");
+                    buffer.append("<div class=\"group\"></div>\n");
                     groupCount--;
-                } else if ("optional".equals(name)) {
+                    break;
+                case "optional":
                     optional = false;
-                } else if ("item".equals(name)) {
+                    break;
+                case "item":
                     if (preset != null) {
                         buffer.append("<div class=\"container\">");
                         if (icon != null && !"".equals(icon)) {
@@ -246,7 +267,8 @@ public class Preset2Html {
                     keys = null;
                     optionalKeys = null;
                     links = null;
-                } else if ("chunk".equals(name)) {
+                    break;
+                case "chunk":
                     if (chunk != null) {
                         if (keys != null) {
                             chunkKeys.put(chunk, keys);
@@ -268,7 +290,11 @@ public class Preset2Html {
                     optionalKeys = null;
                     chunk = null;
                     links = null;
-                } else if ("combo".equals(name) || "multiselect".equals(name)) {
+                    break;
+                case "combo":
+                case "multiselect":
+                default:
+                    // nothing
                 }
             }
 
