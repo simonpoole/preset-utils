@@ -30,7 +30,7 @@ apply plugin: "com.github.breadmoirai.github-release"
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-version = '0.35.0'
+version = '0.36.0'
 def libName = "preset-utils"
 
 repositories {
@@ -76,10 +76,10 @@ task presetsStats(type: JavaExec) {
     main = "ch.poole.osm.presetutils.PresetStats"
     classpath = sourceSets.main.runtimeClasspath
     // args('-ti', 'build/tmp/test.xml');
-    // args('-dti', 'build/tmp/id_preset.xml', '-o', 'build/tmp/id_tags.txt');
-    // args('-dti', 'build/tmp/id_preset_notaginfo.xml', '-o', 'build/tmp/id_tags_notaginfo.txt');
+    // args('-ti', 'build/tmp/id_preset.xml', '-o', 'build/tmp/id_tags.txt');
+    // args('-ti', 'build/tmp/id_preset_notaginfo.xml', '-o', 'build/tmp/id_tags_notaginfo.txt');
     // args('-ti', 'build/tmp/defaultpresets.xml', '-o', 'build/tmp/josm_tags.txt')
-    args('-dti', '/Users/simon/git/beautified-JOSM-preset/master_preset.xml', '-o', 'build/tmp/vespucci_tags.txt')
+    args('-ti', '/Users/simon/git/beautified-JOSM-preset/build/gen/vespucci_preset.xml', '-o', 'build/tmp/vespucci_tags.txt')
     // args('-ti', '/Users/simon/Documents/OSM/SOTM 2018/presets-josm-20071016-current-format.xml', '-o', 'build/tmp/josm_tags_2007.txt')
 }
 presetsStats.group = 'preset stuff'
@@ -88,8 +88,8 @@ presetsStats.description = 'Generate tag support stats for a preset'
 task tagsFromTaginfo(type: JavaExec) {
     main = "ch.poole.osm.presetutils.TagsFromTaginfo"
     classpath = sourceSets.main.runtimeClasspath
-    args('-n','-o','build/tmp/taginfo_tags_nosubtags.txt')
-    // args('-o','build/tmp/taginfo_tags.txt')
+    // args('-n','-o','build/tmp/taginfo_tags_nosubtags.txt')
+    args('-o','build/tmp/taginfo_tags.txt')
 }
 tagsFromTaginfo.group = 'preset stuff'
 tagsFromTaginfo.description = 'Generate list of object tags from taginfo'
@@ -100,8 +100,8 @@ task comparePresets(type: JavaExec) {
     // args('-r','/Users/simon/Documents/OSM/SOTM 2018/tags_reference.txt','-i','build/tmp/vespucci_tags.txt')
     // args('-r','build/tmp/josm_tags.txt','-i','build/tmp/vespucci_tags.txt')
     // args('-r','build/tmp/taginfo_tags_nosubtags.txt','-i','build/tmp/id_tags.txt')
-    // args( '-r','build/tmp/id_tags_notaginfo.txt','-i','build/tmp/vespucci_tags.txt')
-    args( '-r','build/tmp/id_tags.txt','-i','build/tmp/vespucci_tags.txt')
+    args( '-r','build/tmp/id_tags_notaginfo.txt','-i','build/tmp/vespucci_tags.txt')
+    // args( '-r','build/tmp/id_tags.txt','-i','build/tmp/vespucci_tags.txt')
 }
 comparePresets.group = 'preset stuff'
 comparePresets.description = 'Compare input tag list to reference'
@@ -110,9 +110,9 @@ task mergePresetsStats(type: JavaExec) {
     main = "ch.poole.osm.presetutils.MergePresetStats"
     classpath = sourceSets.main.runtimeClasspath
     // args('-i', 'build/tmp/id_tags.txt', 'build/tmp/id_tags_notaginfo.txt', 'build/tmp/josm_tags.txt', 'build/tmp/vespucci_tags.txt', '/Users/simon/Documents/OSM/SOTM 2018/tags_reference.txt')
-    // args('-i', 'build/tmp/id_tags.txt', , 'build/tmp/id_tags_notaginfo.txt', 'build/tmp/vespucci_tags.txt', 'build/tmp/taginfo_tags.txt', '-o', 'build/tmp/merged_stats.txt')
-    // args('-i', 'build/tmp/id_tags.txt', , 'build/tmp/id_tags_notaginfo.txt', 'build/tmp/vespucci_tags.txt', 'build/tmp/taginfo_tags_nosubtags.txt', '-o', 'build/tmp/merged_stats_nosubtags.txt')
-    args('-i', 'build/tmp/taginfo_tags.txt', 'build/tmp/id_tags.txt', 'build/tmp/id_tags_notaginfo.txt', 'build/tmp/vespucci_tags.txt', 'build/tmp/josm_tags.txt', '-o', 'build/tmp/merged_stats.txt')
+    args('-i' , 'build/tmp/id_tags_notaginfo.txt', 'build/tmp/vespucci_tags.txt', 'build/tmp/taginfo_tags.txt', '-o', 'build/tmp/merged_stats.txt')
+    // args('-i',  'build/tmp/id_tags_notaginfo.txt', 'build/tmp/vespucci_tags.txt', 'build/tmp/taginfo_tags_nosubtags.txt', '-o', 'build/tmp/merged_stats_nosubtags.txt')
+    // args('-i', 'build/tmp/taginfo_tags.txt', 'build/tmp/id_tags.txt', 'build/tmp/id_tags_notaginfo.txt', 'build/tmp/vespucci_tags.txt', 'build/tmp/josm_tags.txt', '-o', 'build/tmp/merged_stats.txt')
 }
 mergePresetsStats.group = 'preset stuff'
 mergePresetsStats.description = 'Merge multiple preset tag stats files'
