@@ -10,15 +10,16 @@ import java.util.Set;
 public class Tags {
     /**
      * An set of tags considered 'important'. These are typically tags that define real-world objects and not properties
-     * of such. 
+     * of such.
      * 
      * Needs some mechanism to model cycleway=asl and junction=yes
      */
-    public static final Set<String> OBJECT_KEYS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("aerialway", "aeroway", "amenity", "barrier",
-            "boundary", "building", "craft", "emergency", "ford", "geological", "highway", "historic", "landuse", "leisure", "man_made", "military", "natural",
-            "office", "place", "power", "public_transport", "railway", "shop", "tourism", "waterway", "type", "entrance", "pipeline", "healthcare",
-            "playground", "attraction", "traffic_sign", "traffic_sign:forward", "traffic_sign:backward", "golf", "indoor", "cemetry", "building:part",
-            "landcover", "advertising", "traffic_calming", "club", "cemetery", "police", "telecom")));
+    public static final Set<String> OBJECT_KEYS = Collections.unmodifiableSet(new HashSet<>(
+            Arrays.asList("advertising", "aerialway", "aeroway", "amenity", "area:highway", "attraction", "barrier", "boundary", "building", "building:part",
+                    "cemetry", "club", "craft", "disc_dolf", "disused:amenity", "disused:leisure", "disused:man_made", "disused:shop", "emergency", "entrance",
+                    "ford", "geological", "golf", "healthcare", "highway", "historic", "landcover", "landuse", "leisure", "indoor", "man_made", "military",
+                    "mountain_pass", "natural", "office", "pipeline", "place", "playground", "police", "power", "public_transport", "railway", "shop",
+                    "telecom", "tourism", "traffic_calming", "traffic_sign", "traffic_sign:backward", "traffic_sign:forward", "type", "waterway")));
 
     /**
      * Special keys that are used to indicate a special mostly temporary state
@@ -45,6 +46,8 @@ public class Tags {
         SECOND_LEVEL_KEYS.put("fence", "fence_type");
         SECOND_LEVEL_KEYS.put("tower", "tower:type");
         SECOND_LEVEL_KEYS.put("mast", "tower:type");
+        SECOND_LEVEL_KEYS.put("storage_tank", "content");
+        SECOND_LEVEL_KEYS.put("garden", "garden:type");
     }
 
     public static final Map<String, String> KEYS_FOR_SPECIFIC_ELEMENT = new HashMap<>();
@@ -55,10 +58,10 @@ public class Tags {
     /**
      * Attributes that are never 2nd level keys
      */
-    public static final Set<String> NOT_SECOND_LEVEL_KEYS = Collections
-            .unmodifiableSet(new HashSet<>(Arrays.asList("phone", "health", "census", "postal_code", "maxspeed", "designated", "heritage", "incline", "network",
-                    "level", "motorcycle", "bicycle", "snowmobile", "organic", "fireplace", "boat", "bar", "compressed_air", "swimming_pool", "taxi", "atm",
-                    "telephone", "waste_basket", "drinking_water", "sanitary_dump_station", "water_point", "biergarten", "bench", "give_way", "access",
+    public static final Set<String> NOT_SECOND_LEVEL_KEYS = Collections.unmodifiableSet(
+            new HashSet<>(Arrays.asList("phone", "health", "census", "postal_code", "maxspeed", "designated", "heritage", "incline", "network", "level",
+                    "motorcycle", "bicycle", "snowmobile", "organic", "organic_only", "fireplace", "boat", "bar", "compressed_air", "swimming_pool", "taxi",
+                    "atm", "telephone", "waste_basket", "drinking_water", "sanitary_dump_station", "water_point", "biergarten", "bench", "give_way", "access",
                     "noexit", "outdoor_seating", "goods", "second_hand", "atv", "tobacco", "household", "ski", "ice_cream", "vacant", "car", "fishing",
                     "toilet", "shelter", "handrail", "monorail", "unisex", "private", "exit", "video", "window", "laundry", "table", "steps", "fixme")));
 
