@@ -48,6 +48,8 @@ public class Tags {
         SECOND_LEVEL_KEYS.put("mast", "tower:type");
         SECOND_LEVEL_KEYS.put("storage_tank", "content");
         SECOND_LEVEL_KEYS.put("garden", "garden:type");
+        SECOND_LEVEL_KEYS.put("townhall", "townhall:type");
+        SECOND_LEVEL_KEYS.put("crane", "crane:type");
     }
 
     public static final Map<String, String> KEYS_FOR_SPECIFIC_ELEMENT = new HashMap<>();
