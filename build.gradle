@@ -194,7 +194,8 @@ task fatJar(type: Jar, dependsOn: build) {
         'Implementation-Version': "${project.version}"
     }
     archiveBaseName = project.name + '-all'
-    from { configurations.compile.collect { it.isDirectory() ? it : zipTree(it) } }
+    duplicatesStrategy= "exclude"
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
 }
 fatJar.group = 'build'
