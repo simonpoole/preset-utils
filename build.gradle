@@ -30,7 +30,7 @@ apply plugin: "com.github.breadmoirai.github-release"
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-version = '0.36.0'
+version = '0.37.0'
 def libName = "preset-utils"
 
 repositories {
@@ -77,9 +77,9 @@ task presetsStats(type: JavaExec) {
     classpath = sourceSets.main.runtimeClasspath
     // args('-ti', 'build/tmp/test.xml');
     // args('-ti', 'build/tmp/id_preset.xml', '-o', 'build/tmp/id_tags.txt');
-    // args('-ti', 'build/tmp/id_preset_notaginfo.xml', '-o', 'build/tmp/id_tags_notaginfo.txt');
+    args('-i', 'build/tmp/id_preset_notaginfo.xml', '-o', 'build/tmp/id_tags_notaginfo.txt');
     // args('-ti', 'build/tmp/defaultpresets.xml', '-o', 'build/tmp/josm_tags.txt')
-    args('-ti', '/Users/simon/git/beautified-JOSM-preset/build/gen/vespucci_preset.xml', '-o', 'build/tmp/vespucci_tags.txt')
+    // args('-i', '/Users/simon/git/beautified-JOSM-preset/build/gen/vespucci_preset.xml', '-o', 'build/tmp/vespucci_tags.txt')
     // args('-ti', '/Users/simon/Documents/OSM/SOTM 2018/presets-josm-20071016-current-format.xml', '-o', 'build/tmp/josm_tags_2007.txt')
 }
 presetsStats.group = 'preset stuff'
@@ -124,6 +124,20 @@ task nsiStats(type: JavaExec) {
 }
 nsiStats.group = 'NSI stuff'
 nsiStats.description = 'NSI stats files'
+
+task copyCss(type: Copy) {
+    from new File("src/main/resources/")
+    include 'preset.css'
+    into 'build/tmp/website'
+}
+
+task createWebsite(type: JavaExec, dependsOn: copyCss) {
+    main = "ch.poole.osm.presetutils.Preset2Html"
+    classpath = sourceSets.main.runtimeClasspath
+    args('-i', '/Users/simon/git/beautified-JOSM-preset/build/gen/vespucci_preset.xml', '-o', 'build/tmp/website.html')
+}
+createWebsite.group = 'preset stuff'
+createWebsite.description = 'Generate a web page from preset'
 
 task generateIconList(type: JavaExec) {
     main = "ch.poole.osm.presetutils.ListIcons"

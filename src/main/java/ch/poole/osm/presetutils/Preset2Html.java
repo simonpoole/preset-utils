@@ -35,8 +35,35 @@ import org.xml.sax.helpers.DefaultHandler;
  * @author Simon Poole
  *
  */
-
 public class Preset2Html {
+
+    private static final String LIST_ENTRY_ELEMENT         = "list_entry";
+    private static final String REFERENCE_ELEMENT          = "reference";
+    private static final String ROLE_ELEMENT               = "role";
+    private static final String PRESET_LINK_ELEMENT        = "preset_link";
+    private static final String TEXT_ELEMENT               = "text";
+    private static final String CHECK_ELEMENT              = "check";
+    private static final String COMBO_ELEMENT              = "combo";
+    private static final String MULTISELECT_ELEMENT        = "multiselect";
+    private static final String KEY_ELEMENT                = "key";
+    private static final String OPTIONAL_ELEMENT           = "optional";
+    private static final String LABEL_ELEMENT              = "label";
+    private static final String SEPARATOR_ELEMENT          = "separator";
+    private static final String PRESETS_ELEMENT            = "presets";
+    private static final String GROUP_ELEMENT              = "group";
+    private static final String CHUNK_ELEMENT              = "chunk";
+    private static final String ITEM_ELEMENT               = "item";
+    private static final String DEPRECATED_ATTRIBUTE       = "deprecated";
+    private static final String SHORTDESCRIPTION_ATTRIBUTE = "shortdescription";
+    private static final String ID_ATTRIBUTE               = "id";
+    private static final String ICON_ATTRIBUTE             = "icon";
+    private static final String REF_ATTRIBUTE              = "ref";
+    private static final String KEY_ATTRIBUTE              = "key";
+    private static final String NAME_ATTRIBUTE             = "name";
+    private static final String PRESET_NAME_ATTRIBUTE      = "preset_name";
+    private static final String VALUE_ATTRIBUTE            = "value";
+
+    private static final int GROUP_INDENT = 30;
 
     HashMap<String, MultiHashMap<String, String>> msgs = new HashMap<>();
 
@@ -72,6 +99,7 @@ public class Preset2Html {
             String              roles             = null;
             boolean             optional          = false;
             StringBuilder       buffer            = new StringBuilder();
+            boolean             deprecated        = false;
 
             /**
              * ${@inheritDoc}.
@@ -79,8 +107,8 @@ public class Preset2Html {
             @Override
             public void startElement(String uri, String localName, String name, Attributes attr) throws SAXException {
                 switch (name) {
-                case "presets":
-                    String shortdescription = attr.getValue("shortdescription");
+                case PRESETS_ELEMENT:
+                    String shortdescription = attr.getValue(SHORTDESCRIPTION_ATTRIBUTE);
                     if (shortdescription == null) {
                         pw.write("<h1>Presets from File " + inputFilename + "</h1>\n");
                     } else {
@@ -91,7 +119,6 @@ public class Preset2Html {
                             pw.write("<div class=\"download\"><a href=\"vespucci:/preset?preseturl=" + URLEncoder.encode(vespucciLink, "UTF-8")
                                     + (shortdescription != null ? "&presetname=" + shortdescription : "") + "\">Download link for Vespucci</a><br>\n");
                         } catch (UnsupportedEncodingException e) {
-                            // TODO Auto-generated catch block
                             e.printStackTrace();
                         }
                     }
@@ -100,11 +127,11 @@ public class Preset2Html {
                     }
                     pw.write("<p />");
                     break;
-                case "group":
+                case GROUP_ELEMENT:
                     groupCount++;
-                    group = attr.getValue("name");
-                    buffer.append("<div class=\"group\"><h" + (groupCount + 1) + ">");
-                    String groupIcon = attr.getValue("icon");
+                    group = attr.getValue(NAME_ATTRIBUTE);
+                    buffer.append("<div class=\"group\"><div style=\"margin-left: " + ((groupCount - 1) * GROUP_INDENT) + "px\"><h" + (groupCount + 1) + ">");
+                    String groupIcon = attr.getValue(ICON_ATTRIBUTE);
                     if (groupIcon != null && !"".equals(groupIcon)) {
                         String groupIcon2 = groupIcon.replace("${ICONPATH}", "icons/png/");
                         groupIcon2 = groupIcon2.replace("${ICONTYPE}", "png");
@@ -117,38 +144,40 @@ public class Preset2Html {
                         pw.write("<a href=\"#" + group + "\">" + group + "</a> ");
                     }
                     break;
-                case "item":
-                    preset = attr.getValue("name");
-                    icon = attr.getValue("icon");
+                case ITEM_ELEMENT:
+                    preset = attr.getValue(NAME_ATTRIBUTE);
+                    String deprecatedStr = attr.getValue(DEPRECATED_ATTRIBUTE);
+                    deprecated = deprecatedStr != null && deprecatedStr.equals("true");
+                    icon = attr.getValue(ICON_ATTRIBUTE);
                     if (icon != null && !"".equals(icon)) {
                         icon2 = icon.replace("${ICONPATH}", "icons/png/");
                         icon2 = icon2.replace("${ICONTYPE}", "png");
                     }
                     break;
-                case "chunk":
-                    chunk = attr.getValue("id");
+                case CHUNK_ELEMENT:
+                    chunk = attr.getValue(ID_ATTRIBUTE);
                     keys = "";
                     break;
-                case "separator":
+                case SEPARATOR_ELEMENT:
                     break;
-                case "label":
+                case LABEL_ELEMENT:
                     break;
-                case "optional":
+                case OPTIONAL_ELEMENT:
                     optional = true;
                     break;
-                case "key":
-                case "multiselect":
-                case "combo":
-                case "check":
-                case "text":
+                case KEY_ELEMENT:
+                case MULTISELECT_ELEMENT:
+                case COMBO_ELEMENT:
+                case CHECK_ELEMENT:
+                case TEXT_ELEMENT:
                     if (!optional) {
                         keys = addTags(keys, attr);
                     } else {
                         optionalKeys = addTags(optionalKeys, attr);
                     }
                     break;
-                case "preset_link":
-                    String link = attr.getValue("preset_name");
+                case PRESET_LINK_ELEMENT:
+                    String link = attr.getValue(PRESET_NAME_ATTRIBUTE);
                     if (link != null) {
                         if (links == null) {
                             links = link;
@@ -157,8 +186,8 @@ public class Preset2Html {
                         }
                     }
                     break;
-                case "role":
-                    String role = attr.getValue("key");
+                case ROLE_ELEMENT:
+                    String role = attr.getValue(KEY_ATTRIBUTE);
                     if (role != null && !"".equals(role)) {
                         if (roles == null) {
                             roles = role;
@@ -167,8 +196,8 @@ public class Preset2Html {
                         }
                     }
                     break;
-                case "reference":
-                    String ref = attr.getValue("ref");
+                case REFERENCE_ELEMENT:
+                    String ref = attr.getValue(REF_ATTRIBUTE);
                     String refKeys = chunkKeys.get(ref);
                     if (refKeys != null) {
                         if (!optional) {
@@ -216,15 +245,15 @@ public class Preset2Html {
                         System.err.println(ref + " was not found for preset " + preset);
                     }
                     break;
-                case "list_entry":
+                case LIST_ENTRY_ELEMENT:
                 default:
                     // nothing
                 }
             }
 
             private String addTags(String result, Attributes attr) {
-                String key = attr.getValue("key");
-                String value = attr.getValue("value");
+                String key = attr.getValue(KEY_ATTRIBUTE);
+                String value = attr.getValue(VALUE_ATTRIBUTE);
                 if (key != null && !"".equals(key)) {
                     if (result == null) {
                         result = key + "=" + (value != null ? value : "*");
@@ -238,27 +267,26 @@ public class Preset2Html {
             @Override
             public void endElement(String uri, String localMame, String name) throws SAXException {
                 switch (name) {
-                case "group":
+                case GROUP_ELEMENT:
                     group = null;
-                    buffer.append("<div class=\"group\"></div>\n");
+                    buffer.append("</div></div>\n");
                     groupCount--;
                     break;
-                case "optional":
+                case OPTIONAL_ELEMENT:
                     optional = false;
                     break;
-                case "item":
+                case ITEM_ELEMENT:
                     if (preset != null) {
                         buffer.append("<div class=\"container\">");
                         if (icon != null && !"".equals(icon)) {
                             if (!icon2.equals(icon)) {
-                                buffer.append("<div class=\"preset\"><img src=\"" + icon2 + "\"><br>" + preset.replace("/", " / ") + "</div>");
+                                buffer.append("<div class=\"preset\"><img src=\"" + icon2 + "\"><br>" + preset.replace("/", " / ") + isDeprecated() + "</div>");
                             } else {
-                                buffer.append("<div class=\"preset\">" + preset.replace("/", " / ") + "</div>");
+                                buffer.append("<div class=\"preset\">" + preset.replace("/", " / ") + isDeprecated() + "</div>");
                             }
                             appendKeys();
-                            buffer.append("</div>");
                         } else {
-                            buffer.append("<div class=\"preset\">" + preset.replace("/", " / ") + "</div>");
+                            buffer.append("<div class=\"preset\">" + preset.replace("/", " / ") + isDeprecated() + "</div>");
                             appendKeys();
                         }
                         buffer.append("</div>");
@@ -268,7 +296,7 @@ public class Preset2Html {
                     optionalKeys = null;
                     links = null;
                     break;
-                case "chunk":
+                case CHUNK_ELEMENT:
                     if (chunk != null) {
                         if (keys != null) {
                             chunkKeys.put(chunk, keys);
@@ -282,7 +310,6 @@ public class Preset2Html {
                         if (roles != null) {
                             chunkRoles.put(chunk, roles);
                         }
-                        // System.err.println("added chunk " + chunk);
                     } else {
                         System.err.println("chunk null");
                     }
@@ -291,11 +318,15 @@ public class Preset2Html {
                     chunk = null;
                     links = null;
                     break;
-                case "combo":
-                case "multiselect":
+                case COMBO_ELEMENT:
+                case MULTISELECT_ELEMENT:
                 default:
                     // nothing
                 }
+            }
+
+            private String isDeprecated() {
+                return deprecated ? "<p><i>deprecated</i>" : "";
             }
 
             private void appendKeys() {
