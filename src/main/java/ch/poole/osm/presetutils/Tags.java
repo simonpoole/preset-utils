@@ -15,11 +15,11 @@ public class Tags {
      * Needs some mechanism to model cycleway=asl and junction=yes
      */
     public static final Set<String> OBJECT_KEYS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("advertising", "aerialway", "aeroway", "amenity",
-            "area:highway", "attraction", "barrier", "boundary", "building", "building:part", "cemetry", "club", "craft", "disc_golf", "disused:amenity",
-            "disused:leisure", "disused:man_made", "disused:shop", "emergency", "entrance", "ford", "geological", "golf", "harbour", "healthcare", "highway",
-            "historic", "landcover", "landuse", "leisure", "indoor", "man_made", "military", "mountain_pass", "natural", "office", "pipeline", "piste:type",
-            "place", "playground", "police", "power", "public_transport", "railway", "shop", "telecom", "tourism", "traffic_calming", "traffic_sign",
-            "traffic_sign:backward", "traffic_sign:forward", "type", "waterway")));
+            "area:highway", "attraction", "barrier", "boundary", "building", "building:part", "cemetry", "club", "craft", "disc_golf", "departures_board",
+            "disused:amenity", "disused:leisure", "disused:man_made", "disused:shop", "emergency", "entrance", "ford", "geological", "golf", "harbour",
+            "healthcare", "highway", "historic", "landcover", "landuse", "leisure", "indoor", "man_made", "military", "mountain_pass", "natural", "office",
+            "pipeline", "piste:type", "place", "playground", "police", "power", "public_transport", "railway", "shop", "telecom", "tourism", "traffic_calming",
+            "traffic_sign", "traffic_sign:backward", "traffic_sign:forward", "type", "waterway")));
 
     /**
      * Special keys that are used to indicate a special mostly temporary state
