@@ -82,7 +82,7 @@ public class TagsFromTaginfo {
                         List<ValueAndDescription> subValues = TagInfo.getOptionsFromTagInfo(subKey, filter, false, minCount / 5, 0, false);
                         if (values != null) {
                             for (ValueAndDescription sub : subValues) {
-                                if (Tags.TEMP_KEYS.contains(subKey) && !values.contains(sub)) {
+                                if (Tags.LIFECYCLE_KEYS.contains(subKey) && !values.contains(sub)) {
                                     // the sub value may only be one of the top level values for this key
                                     // example highway=construction, construction=primary
                                     continue;
