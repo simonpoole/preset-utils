@@ -100,6 +100,7 @@ public class Preset2Html {
             boolean             optional          = false;
             StringBuilder       buffer            = new StringBuilder();
             boolean             deprecated        = false;
+            boolean             separator           = false;
 
             /**
              * ${@inheritDoc}.
@@ -277,7 +278,12 @@ public class Preset2Html {
                     break;
                 case ITEM_ELEMENT:
                     if (preset != null) {
-                        buffer.append("<div class=\"container\">");
+                        if (separator) {
+                            buffer.append("<div style=\"clear: both\" class=\"container\">");
+                            separator = false;
+                        } else {
+                            buffer.append("<div class=\"container\">");
+                        }
                         if (icon != null && !"".equals(icon)) {
                             if (!icon2.equals(icon)) {
                                 buffer.append("<div class=\"preset\"><img src=\"" + icon2 + "\"><br>" + preset.replace("/", " / ") + isDeprecated() + "</div>");
@@ -317,6 +323,9 @@ public class Preset2Html {
                     optionalKeys = null;
                     chunk = null;
                     links = null;
+                    break;
+                case SEPARATOR_ELEMENT:
+                    separator = true;
                     break;
                 case COMBO_ELEMENT:
                 case MULTISELECT_ELEMENT:
