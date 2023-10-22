@@ -59,6 +59,7 @@ public class PresetStats {
         int                       count      = 0;
         Map<String, List<String>> chunkTags  = null;
         boolean                   isChunk    = false;
+        boolean                   deprecated = false;
     }
 
     Map<String, ItemStats> items        = new HashMap<>();
@@ -97,7 +98,6 @@ public class PresetStats {
         String                      tagKey             = null;
         String                      tagValue           = null;
         Map<String, ItemStats>      chunks             = new HashMap<>();
-        boolean                     deprecated         = false;
 
         String  comboKey;
         boolean inOptional  = false;
@@ -130,7 +130,7 @@ public class PresetStats {
                 expandCombo = false;
                 current = new ItemStats();
                 current.name = attr.getValue(NAME);
-                deprecated = attr.getValue(DEPRECATED_ATTR) != null;
+                current.deprecated = attr.getValue(DEPRECATED_ATTR) != null;
             } else if (CHUNK.equals(qName)) {
                 current = new ItemStats();
                 current.name = attr.getValue(ID);
@@ -333,7 +333,7 @@ public class PresetStats {
                 inOptional = false;
             } else if (!inOptional) {
                 if (ITEM.equals(qName)) {
-                    if (!deprecated || !ignoreDeprecated) {
+                    if (!current.deprecated || !ignoreDeprecated) {
                         items.put(current.tag, current);
                     }
                     current = null;
@@ -370,7 +370,7 @@ public class PresetStats {
         for (ItemStats s : items.values()) {
             keyCount += s.keyCount;
             valueCount += s.valueCount;
-            pw.print(s.tag + "," + s.count + "\n");
+            pw.print(s.tag + "," + s.count + "," + (s.deprecated ? "D" : "X") + "\n");
         }
         pw.flush();
         // print stats to standard out

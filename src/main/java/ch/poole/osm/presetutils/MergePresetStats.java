@@ -77,6 +77,7 @@ public class MergePresetStats {
 
             Map<String, boolean[]> mergedStats = new HashMap<>();
             Map<String, Integer> mergedCounts = new HashMap<>();
+            Map<String, boolean[]> mergedDeprecated = new HashMap<>();
             for (int i = 0; i < input.length; i++) {
 
                 List<String> list = null;
@@ -104,6 +105,14 @@ public class MergePresetStats {
                     } catch (Exception e) {
                         System.out.println(e.getMessage());
                     }
+                    if (v.length == 3 && "D".equals(v[2])) {
+                        boolean[] deprecated = mergedDeprecated.get(v[0]);
+                        if (deprecated == null) {
+                            deprecated = new boolean[input.length];
+                            mergedDeprecated.put(v[0], deprecated);
+                        }
+                        deprecated[i] = true;
+                    }
                 }
             }
             pw = new PrintWriter(os);
@@ -117,10 +126,16 @@ public class MergePresetStats {
             for (Entry<String, boolean[]> tags : mergedStats.entrySet()) {
                 String key = tags.getKey();
                 pw.print(key);
-                for (boolean b : tags.getValue()) {
+                for (int i = 0; i < input.length; i++) {
+                    boolean b = tags.getValue()[i];
                     pw.print(",");
                     if (b) {
-                        pw.print("X");
+                        boolean[] deprecated = mergedDeprecated.get(key);
+                        if (deprecated != null && deprecated[i]) {
+                            pw.print("D");
+                        } else {
+                            pw.print("X");
+                        }
                     }
                 }
                 pw.print(",");
