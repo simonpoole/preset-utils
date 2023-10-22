@@ -46,104 +46,103 @@ public class TagInfo {
      */
     public static List<ValueAndDescription> getOptionsFromTagInfo(String key, String filter, boolean useWiki, int minCount, int maxResults,
             boolean multiSelect) {
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e1) {
-        }
+
         // "https://taginfo.openstreetmap.org/api/4/key/values?key=aerialway&page=1&rp=10&sortname=count_all&sortorder=desc"
         boolean allowUppercase = canHaveUppercase.matcher(key).matches();
         Set<ValueAndDescription> values = new HashSet<>();
-        JsonReader reader = null;
-        InputStream is = null;
-        try {
-            String sortValue = "count_all";
-            if (filter != null) {
-                sortValue = "count_" + filter;
-            }
-            String paging = maxResults != 0 ? "&page=1&rp=" + maxResults : "";
-            URL url = new URL("https://taginfo.openstreetmap.org/api/4/key/values?" + (filter != null ? "filter=" + filter + "&" : "") + "key=" + key + paging
-                    + "&sortname=" + sortValue + "&sortorder=desc");
-            System.err.println(url);
-            is = Utils.openConnection(url);
-            reader = new JsonReader(new InputStreamReader(is, "UTF-8"));
+
+        int page = 1;
+        boolean loop = maxResults == 0;
+        if (loop) {
+            maxResults = 500;
+        }
+        int total = 0;
+        int count = 0;
+        do {
             try {
-                reader.beginObject();
-                while (reader.hasNext()) {
-                    String jsonName = reader.nextName();
-                    if ("data".equals(jsonName)) {
-                        reader.beginArray();
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e1) {
+                }
+                String sortValue = "count_all";
+                if (filter != null) {
+                    sortValue = "count_" + filter;
+                }
+                URL url = new URL("https://taginfo.openstreetmap.org/api/4/key/values?" + (filter != null ? "filter=" + filter + "&" : "") + "key=" + key
+                        + "&page=" + page + "&rp=" + maxResults + "&sortname=" + sortValue + "&sortorder=desc");
+                System.err.println(url);
+                try (InputStream is = Utils.openConnection(url); JsonReader reader = new JsonReader(new InputStreamReader(is, "UTF-8"))) {
+                    try {
+                        reader.beginObject();
                         while (reader.hasNext()) {
-                            reader.beginObject();
-                            String value = null;
-                            boolean inWiki = false;
-                            int count = 0;
-                            double fraction = 0.0D;
-                            while (reader.hasNext()) {
-                                jsonName = reader.nextName();
-                                switch (jsonName) {
-                                case "value":
-                                    value = reader.nextString().trim();
-                                    break;
-                                case "in_wiki":
-                                    inWiki = reader.nextBoolean();
-                                    break;
-                                case "count":
-                                    count = reader.nextInt();
-                                    break;
-                                case "fraction":
-                                    fraction = reader.nextDouble();
-                                    break;
-                                default:
-                                    reader.skipValue();
-                                }
-                            }
-                            reader.endObject();
-                            if (value != null && ((inWiki && useWiki) || (count >= minCount && fraction > 0.0))
-                                    && (allowUppercase || (value.equals(value.toLowerCase()) && value.matches("^[^\\*\\=\\;\\?]+$"))) && isASCII(value)
-                                    && !hasPunctuation.matcher(value).matches()) {
-                                if (multiSelect && value.contains(";")) {
-                                    // currently not used as the regexp throws out string containing ;
-                                    for (String s : value.split(";")) {
-                                        ValueAndDescription vad = new ValueAndDescription();
-                                        vad.value = s.trim();
-                                        vad.count = count;
-                                        values.add(vad);
-                                        System.err.println(vad.value);
+                            String jsonName = reader.nextName();
+                            if ("total".equals(jsonName)) {
+                                total = reader.nextInt();
+                                System.err.println("Total results " + total);
+                            } else if ("data".equals(jsonName)) {
+                                reader.beginArray();
+                                while (reader.hasNext()) {
+                                    reader.beginObject();
+                                    String value = null;
+                                    boolean inWiki = false;
+
+                                    double fraction = 0.0D;
+                                    while (reader.hasNext()) {
+                                        jsonName = reader.nextName();
+                                        switch (jsonName) {
+                                        case "value":
+                                            value = reader.nextString().trim();
+                                            break;
+                                        case "in_wiki":
+                                            inWiki = reader.nextBoolean();
+                                            break;
+                                        case "count":
+                                            count = reader.nextInt();
+                                            break;
+                                        case "fraction":
+                                            fraction = reader.nextDouble();
+                                            break;
+                                        default:
+                                            reader.skipValue();
+                                        }
                                     }
-                                } else {
-                                    ValueAndDescription vad = new ValueAndDescription();
-                                    vad.value = value.trim();
-                                    vad.count = count;
-                                    values.add(vad);
-                                    System.err.println(vad.value);
+                                    reader.endObject();
+                                    if (value != null && ((inWiki && useWiki) || (count >= minCount && fraction > 0.0))
+                                            && (allowUppercase || (value.equals(value.toLowerCase()) && value.matches("^[^\\*\\=\\;\\?]+$"))) && isASCII(value)
+                                            && !hasPunctuation.matcher(value).matches()) {
+                                        if (multiSelect && value.contains(";")) {
+                                            // currently not used as the regexp throws out string containing ;
+                                            for (String s : value.split(";")) {
+                                                ValueAndDescription vad = new ValueAndDescription();
+                                                vad.value = s.trim();
+                                                vad.count = count;
+                                                values.add(vad);
+                                                System.err.println(vad.value);
+                                            }
+                                        } else {
+                                            ValueAndDescription vad = new ValueAndDescription();
+                                            vad.value = value.trim();
+                                            vad.count = count;
+                                            values.add(vad);
+                                            System.err.println(vad.value);
+                                        }
+                                    }
                                 }
+                                reader.endArray();
+                            } else {
+                                reader.skipValue();
                             }
                         }
-                        reader.endArray();
-                    } else {
-                        reader.skipValue();
+                        reader.endObject();
+                    } catch (IOException e) {
+                        System.err.println(e.getMessage());
                     }
                 }
-                reader.endObject();
             } catch (IOException e) {
-                System.err.println(e.getMessage());
+                e.printStackTrace(System.err);
             }
-        } catch (IOException e) {
-            e.printStackTrace(System.err);
-        } finally {
-            try {
-                if (reader != null) {
-                    reader.close();
-                }
-            } catch (IOException ioex) {
-            }
-            try {
-                if (is != null) {
-                    is.close();
-                }
-            } catch (IOException ioex) {
-            }
-        }
+            page++;
+        } while (loop && (page - 1) * maxResults < total && count >= minCount);
         return new ArrayList<>(values);
     }
 
