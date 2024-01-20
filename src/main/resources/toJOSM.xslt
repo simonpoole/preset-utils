@@ -28,23 +28,6 @@
     </xsl:template>
     <xsl:template match="@deprecated" />
     <xsl:template match="@autoapply" />
-    <xsl:template match="@name[../@regions]">
-        <xsl:attribute name="name">
-            <xsl:value-of select="." />
-            <xsl:choose>
-                <xsl:when test="../@exclude_regions">
-                    <xsl:text> (default)</xsl:text>
-                </xsl:when>
-                <xsl:otherwise>
-                    <xsl:text> (</xsl:text>
-                    <xsl:value-of select="../@regions" />
-                    <xsl:text>)</xsl:text>
-                </xsl:otherwise>
-            </xsl:choose> 
-        </xsl:attribute>
-    </xsl:template>
-    <xsl:template match="@regions" />
-    <xsl:template match="@exclude_regions" />
     <xsl:template match="@long_text" />
     <xsl:template match="@i18n" />
     <xsl:template match="@value_type" />
@@ -53,6 +36,8 @@
     <xsl:template match="m:key/@values_context" />
     <xsl:template match="m:key/@text" />
     <xsl:template match="m:key/@object" />
+    <xsl:template match="m:key/@regions" />
+    <xsl:template match="m:key/@exclude_regions" />
     <xsl:template match="m:presets/@object_keys" />
     <xsl:template match="m:checkgroup/@text" />
     <xsl:template match="m:checkgroup/@text_context" />
