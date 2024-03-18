@@ -37,6 +37,7 @@ import org.xml.sax.helpers.DefaultHandler;
  */
 public class Preset2Html {
 
+    private static final String TRUE                       = "true";
     private static final String LIST_ENTRY_ELEMENT         = "list_entry";
     private static final String REFERENCE_ELEMENT          = "reference";
     private static final String ROLE_ELEMENT               = "role";
@@ -62,6 +63,8 @@ public class Preset2Html {
     private static final String NAME_ATTRIBUTE             = "name";
     private static final String PRESET_NAME_ATTRIBUTE      = "preset_name";
     private static final String VALUE_ATTRIBUTE            = "value";
+    private static final String REGIONS_ATTRIBUTE          = "regions";
+    private static final String EXCLUDE_REGIONS_ATTRIBUTE  = "exclude_regions";
 
     private static final int GROUP_INDENT = 30;
 
@@ -86,6 +89,7 @@ public class Preset2Html {
 
             String              group             = null;
             String              preset            = null;
+            String              regions           = null;
             String              chunk             = null;
             Map<String, String> chunkKeys         = new HashMap<>();
             Map<String, String> chunkOptionalKeys = new HashMap<>();
@@ -100,7 +104,7 @@ public class Preset2Html {
             boolean             optional          = false;
             StringBuilder       buffer            = new StringBuilder();
             boolean             deprecated        = false;
-            boolean             separator           = false;
+            boolean             separator         = false;
 
             /**
              * ${@inheritDoc}.
@@ -140,15 +144,21 @@ public class Preset2Html {
                             buffer.append("<img src=\"" + groupIcon2 + "\" style=\"vertical-align:middle\"> ");
                         }
                     }
-                    buffer.append("<a name=\"" + group + "\"></a>" + group + "</h" + (groupCount + 1) + ">\n");
+                    buffer.append("<a name=\"" + group + "\"></a>" + group);
+                    String groupRegions = getRegions(attr, true);
+                    if (groupRegions != null) {
+                        buffer.append(" " + groupRegions);
+                    }
+                    buffer.append("</h" + (groupCount + 1) + ">\n");
                     if (groupCount == 1) {
-                        pw.write("<a href=\"#" + group + "\">" + group + "</a> ");
+                        pw.write("<a href=\"#" + group + "\">" + group + getRegions(attr, true) + "</a> ");
                     }
                     break;
                 case ITEM_ELEMENT:
                     preset = attr.getValue(NAME_ATTRIBUTE);
+                    regions = getRegions(attr, true);
                     String deprecatedStr = attr.getValue(DEPRECATED_ATTRIBUTE);
-                    deprecated = deprecatedStr != null && deprecatedStr.equals("true");
+                    deprecated = deprecatedStr != null && TRUE.equals(deprecatedStr);
                     icon = attr.getValue(ICON_ATTRIBUTE);
                     if (icon != null && !"".equals(icon)) {
                         icon2 = icon.replace("${ICONPATH}", "icons/png/");
@@ -256,13 +266,32 @@ public class Preset2Html {
                 String key = attr.getValue(KEY_ATTRIBUTE);
                 String value = attr.getValue(VALUE_ATTRIBUTE);
                 if (key != null && !"".equals(key)) {
-                    if (result == null) {
-                        result = key + "=" + (value != null ? value : "*");
+                    String deprecatedStr = attr.getValue(DEPRECATED_ATTRIBUTE);
+                    boolean fieldDeprecated = deprecatedStr != null && TRUE.equals(deprecatedStr);
+                    String tag = "<div class=\"no_break\">" + key + "=" + (value != null ? value : "*") + getRegions(attr, false)
+                            + (fieldDeprecated ? " <i>deprecated</i>" : "") + "</div>";
+                    if (result != null) {
+                        result = result + tag;
                     } else {
-                        result = result + "<br>" + key + "=" + (value != null ? value : "*");
+                        result = tag;
                     }
                 }
                 return result;
+            }
+
+            private String getRegions(Attributes attr, boolean withDiv) {
+                String reg = attr.getValue(REGIONS_ATTRIBUTE);
+                if (reg != null) {
+                    String result = "[" + reg + "]";
+                    if (TRUE.equals(attr.getValue(EXCLUDE_REGIONS_ATTRIBUTE))) {
+                        result = "!" + result;
+                    }
+                    if (withDiv) {
+                        return " <div class=\"no_break\">" + result + "</div>";
+                    }
+                    return " " + result;
+                }
+                return "";
             }
 
             @Override
@@ -286,15 +315,17 @@ public class Preset2Html {
                         }
                         if (icon != null && !"".equals(icon)) {
                             if (!icon2.equals(icon)) {
-                                buffer.append("<div class=\"preset\"><img src=\"" + icon2 + "\"><br>" + preset.replace("/", " / ") + isDeprecated() + "</div>");
+                                buffer.append("<div class=\"preset\"><img src=\"" + icon2 + "\"><br>" + preset.replace("/", " / "));
                             } else {
-                                buffer.append("<div class=\"preset\">" + preset.replace("/", " / ") + isDeprecated() + "</div>");
+                                buffer.append("<div class=\"preset\">" + preset.replace("/", " / "));
                             }
-                            appendKeys();
                         } else {
-                            buffer.append("<div class=\"preset\">" + preset.replace("/", " / ") + isDeprecated() + "</div>");
-                            appendKeys();
+                            buffer.append("<div class=\"preset\">" + preset.replace("/", " / "));
                         }
+                        buffer.append(" " + regions);
+                        buffer.append(isDeprecated());
+                        buffer.append("</div>");
+                        appendKeys();
                         buffer.append("</div>");
                         preset = null;
                     }
