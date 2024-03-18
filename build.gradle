@@ -280,6 +280,7 @@ githubRelease {
     owner = "simonpoole"
     tagName = project.version
     releaseName = project.version
+    targetCommitish = "master"
     body = ""
     FilenameFilter filter = { dir, filename -> filename.contains(version) }
     releaseAssets = new File(buildDir, 'libs').listFiles(filter)
