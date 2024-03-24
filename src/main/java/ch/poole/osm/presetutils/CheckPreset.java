@@ -28,6 +28,7 @@ import static ch.poole.osm.presetutils.PresetConstants.ROLES;
 import static ch.poole.osm.presetutils.PresetConstants.SEPARATOR;
 import static ch.poole.osm.presetutils.PresetConstants.SPACE;
 import static ch.poole.osm.presetutils.PresetConstants.TEXT_FIELD;
+import static ch.poole.osm.presetutils.PresetConstants.VALUE_TYPE;
 import static ch.poole.osm.presetutils.PresetConstants.VALUES;
 
 import java.io.FileInputStream;
@@ -35,8 +36,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayDeque;
+import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -66,8 +69,8 @@ import org.xml.sax.helpers.DefaultHandler;
  * 
  * Check performed
  * 
- * - ensure that display_values attributes are consistent with the values
- * - check that chunks are defined before they are referenced
+ * - ensure that display_values attributes are consistent with the values - check that chunks are defined before they
+ * are referenced
  * 
  * Licence Apache 2.0
  * 
@@ -80,6 +83,8 @@ public class CheckPreset {
     private static final String INPUT_OPTION = "input";
 
     private static final Logger LOGGER = Logger.getLogger(CheckPreset.class.getName());
+
+    private static final List<String> NO_DISPLAY_VALUES = Arrays.asList("opening_hours", "dimension_horizontal", "dimension_vertical", "integer");
 
     String      inputFilename;
     int         groupCount = 0;
@@ -159,17 +164,19 @@ public class CheckPreset {
                     String values = attr.getValue(VALUES);
                     String displayValues = attr.getValue(DISPLAY_VALUES);
                     if (values != null) {
-                        if (displayValues != null) {
-                            int displayValuesCount = displayValues.split("\\" + delimiter).length;
-                            int valuesCount = values.split("\\" + delimiter).length;
-                            if (valuesCount != displayValuesCount || valuesCount == 0) {
-                                LOGGER.log(Level.SEVERE, "Line {0}: inconsistent display_values for item \"{1}\" key {2}",
+                        if (displayValues == null) {
+                            if (!NO_DISPLAY_VALUES.contains(attr.getValue(VALUE_TYPE))) {
+                                LOGGER.log(Level.INFO, "Line {0}: missing display_values for item \"{1}\" key {2}",
                                         new Object[] { line, preset != null ? preset : chunk, key });
-                                error = true;
                             }
-                        } else {
-                            LOGGER.log(Level.INFO, "Line {0}: missing display_values for item \"{1}\" key {2}",
+                            break;
+                        }
+                        int displayValuesCount = displayValues.split("\\" + delimiter).length;
+                        int valuesCount = values.split("\\" + delimiter).length;
+                        if (valuesCount != displayValuesCount || valuesCount == 0) {
+                            LOGGER.log(Level.SEVERE, "Line {0}: inconsistent display_values for item \"{1}\" key {2}",
                                     new Object[] { line, preset != null ? preset : chunk, key });
+                            error = true;
                         }
                     }
                     break;
