@@ -12,32 +12,32 @@ public class Tags {
      * An set of tags considered 'important'. These are typically tags that define real-world objects and not properties
      * of such.
      */
-    public static final Set<String> OBJECT_KEYS = Collections.unmodifiableSet(
-            new HashSet<>(Arrays.asList("advertising", "aerialway", "aeroway", "amenity", "area:highway", "attraction", "barrier", "boundary", "building",
-                    "building:part", "cemetry", "club", "craft", "disc_golf", "departures_board", "emergency", "entrance", "ford", "geological", "golf",
-                    "harbour", "healthcare", "highway", "historic", "landcover", "landuse", "leisure", "indoor", "man_made", "military", "mountain_pass",
-                    "natural", "office", "pipeline", "piste:type", "place", "playground", "police", "power", "public_transport", "railway", "seamark:type",
-                    "shop", "telecom", "tourism", "traffic_calming", "traffic_sign", "traffic_sign:backward", "traffic_sign:forward", "type", "waterway",
-                    /* the following are those top level keys that make sense in combination with lifecycle keys */
-                    "abandoned:aerialway", "abandoned:aeroway", "abandoned:amenity", "abandoned:attraction", "abandoned:building", "abandoned:cemetry",
-                    "abandoned:harbour", "abandoned:healthcare", "abandoned:highway", "abandoned:leisure", "abandoned:man_made", "abandoned:military",
-                    "abandoned:pipeline", "abandoned:place", "abandoned:playground", "abandoned:police", "abandoned:power", "abandoned:public_transport",
-                    "abandoned:railway", "abandoned:seamark:type", "abandoned:shop", "abandoned:telecom", "abandoned:tourism", "construction:aerialway",
-                    "construction:aeroway", "construction:amenity", "construction:attraction", "construction:building", "construction:cemetry",
-                    "construction:harbour", "construction:healthcare", "construction:highway", "construction:leisure", "construction:man_made",
-                    "construction:military", "construction:pipeline", "construction:place", "construction:playground", "construction:police",
-                    "construction:power", "construction:public_transport", "construction:railway", "construction:seamark:type", "construction:shop",
-                    "construction:telecom", "construction:tourism", "disused:aerialway", "disused:aeroway", "disused:amenity", "disused:attraction",
-                    "disused:building", "disused:cemetry", "disused:harbour", "disused:healthcare", "disused:highway", "disused:leisure", "disused:man_made",
-                    "disused:military", "disused:pipeline", "disused:place", "disused:playground", "disused:police", "disused:power",
-                    "disused:public_transport", "disused:railway", "disused:seamark:type", "disused:shop", "disused:telecom", "disused:tourism",
-                    "planned:aerialway", "planned:aeroway", "planned:amenity", "planned:attraction", "planned:building", "planned:cemetry", "planned:harbour",
-                    "planned:healthcare", "planned:highway", "planned:leisure", "planned:man_made", "planned:military", "planned:pipeline", "planned:place",
-                    "planned:playground", "planned:police", "planned:power", "planned:public_transport", "planned:railway", "planned:seamark:type",
-                    "planned:shop", "planned:telecom", "planned:tourism", "proposed:aerialway", "proposed:aeroway", "proposed:amenity", "proposed:attraction",
-                    "proposed:building", "proposed:cemetry", "proposed:harbour", "proposed:healthcare", "proposed:highway", "proposed:leisure",
-                    "proposed:man_made", "proposed:military", "proposed:pipeline", "proposed:place", "proposed:playground", "proposed:police", "proposed:power",
-                    "proposed:public_transport", "proposed:railway", "proposed:seamark:type", "proposed:shop", "proposed:telecom", "proposed:tourism")));
+    public static final Set<String> OBJECT_KEYS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("advertising", "aerialway", "aeroway", "amenity",
+            "area:highway", "attraction", "barrier", "boundary", "building", "building:part", "cemetry", "club", "craft", "disc_golf", "departures_board",
+            "emergency", "entrance", "ford", "geological", "golf", "harbour", "healthcare", "highway", "historic", "landcover", "landuse", "leisure", "indoor",
+            "man_made", "military", "mountain_pass", "natural", "office", "pipeline", "piste:type", "place", "playground", "police", "power",
+            "public_transport", "railway", "roof:edge", "roof:ridge", "seamark:type", "shop", "telecom", "tourism", "traffic_calming", "traffic_sign",
+            "traffic_sign:backward", "traffic_sign:forward", "type", "waterway",
+            /* the following are those top level keys that make sense in combination with lifecycle keys */
+            "abandoned:aerialway", "abandoned:aeroway", "abandoned:amenity", "abandoned:attraction", "abandoned:building", "abandoned:cemetry",
+            "abandoned:harbour", "abandoned:healthcare", "abandoned:highway", "abandoned:leisure", "abandoned:man_made", "abandoned:military",
+            "abandoned:pipeline", "abandoned:place", "abandoned:playground", "abandoned:police", "abandoned:power", "abandoned:public_transport",
+            "abandoned:railway", "abandoned:seamark:type", "abandoned:shop", "abandoned:telecom", "abandoned:tourism", "construction:aerialway",
+            "construction:aeroway", "construction:amenity", "construction:attraction", "construction:building", "construction:cemetry", "construction:harbour",
+            "construction:healthcare", "construction:highway", "construction:leisure", "construction:man_made", "construction:military",
+            "construction:pipeline", "construction:place", "construction:playground", "construction:police", "construction:power",
+            "construction:public_transport", "construction:railway", "construction:seamark:type", "construction:shop", "construction:telecom",
+            "construction:tourism", "disused:aerialway", "disused:aeroway", "disused:amenity", "disused:attraction", "disused:building", "disused:cemetry",
+            "disused:harbour", "disused:healthcare", "disused:highway", "disused:leisure", "disused:man_made", "disused:military", "disused:pipeline",
+            "disused:place", "disused:playground", "disused:police", "disused:power", "disused:public_transport", "disused:railway", "disused:seamark:type",
+            "disused:shop", "disused:telecom", "disused:tourism", "planned:aerialway", "planned:aeroway", "planned:amenity", "planned:attraction",
+            "planned:building", "planned:cemetry", "planned:harbour", "planned:healthcare", "planned:highway", "planned:leisure", "planned:man_made",
+            "planned:military", "planned:pipeline", "planned:place", "planned:playground", "planned:police", "planned:power", "planned:public_transport",
+            "planned:railway", "planned:seamark:type", "planned:shop", "planned:telecom", "planned:tourism", "proposed:aerialway", "proposed:aeroway",
+            "proposed:amenity", "proposed:attraction", "proposed:building", "proposed:cemetry", "proposed:harbour", "proposed:healthcare", "proposed:highway",
+            "proposed:leisure", "proposed:man_made", "proposed:military", "proposed:pipeline", "proposed:place", "proposed:playground", "proposed:police",
+            "proposed:power", "proposed:public_transport", "proposed:railway", "proposed:seamark:type", "proposed:shop", "proposed:telecom",
+            "proposed:tourism")));
 
     /**
      * Tags that are exceptions
