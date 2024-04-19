@@ -146,7 +146,7 @@ public class Preset2Html {
                     }
                     buffer.append("<a name=\"" + group + "\"></a>" + group);
                     String groupRegions = getRegions(attr, true);
-                    if (groupRegions != null) {
+                    if (!"".equals(groupRegions)) {
                         buffer.append(" " + groupRegions);
                     }
                     buffer.append("</h" + (groupCount + 1) + ">\n");
@@ -301,6 +301,7 @@ public class Preset2Html {
                     group = null;
                     buffer.append("</div></div>\n");
                     groupCount--;
+                    buffer.append("<div style=\"clear: both; margin-left: " + ((groupCount - 1) * GROUP_INDENT) + "px\"></div>");
                     break;
                 case OPTIONAL_ELEMENT:
                     optional = false;
