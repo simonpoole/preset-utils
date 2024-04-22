@@ -16,8 +16,8 @@ public class Tags {
             "area:highway", "attraction", "barrier", "boundary", "building", "building:part", "cemetry", "club", "craft", "disc_golf", "departures_board",
             "emergency", "entrance", "ford", "geological", "golf", "harbour", "healthcare", "highway", "historic", "landcover", "landuse", "leisure", "indoor",
             "man_made", "military", "mountain_pass", "natural", "office", "pipeline", "piste:type", "place", "playground", "police", "power",
-            "public_transport", "railway", "roof:edge", "roof:ridge", "seamark:type", "shop", "telecom", "tourism", "traffic_calming", "traffic_sign",
-            "traffic_sign:backward", "traffic_sign:forward", "type", "waterway",
+            "public_transport", "railway", "roller_coaster", "roof:edge", "roof:ridge", "seamark:type", "shop", "telecom", "tourism", "traffic_calming",
+            "traffic_sign", "traffic_sign:backward", "traffic_sign:forward", "type", "waterway",
             /* the following are those top level keys that make sense in combination with lifecycle keys */
             "abandoned:aerialway", "abandoned:aeroway", "abandoned:amenity", "abandoned:attraction", "abandoned:building", "abandoned:cemetry",
             "abandoned:harbour", "abandoned:healthcare", "abandoned:highway", "abandoned:leisure", "abandoned:man_made", "abandoned:military",
@@ -89,12 +89,12 @@ public class Tags {
     /**
      * Attributes that are never 2nd level keys
      */
-    public static final Set<String> NOT_SECOND_LEVEL_KEYS = Collections.unmodifiableSet(
-            new HashSet<>(Arrays.asList("phone", "health", "census", "postal_code", "maxspeed", "designated", "heritage", "incline", "network", "level",
-                    "motorcycle", "bicycle", "snowmobile", "organic", "organic_only", "fireplace", "boat", "bar", "compressed_air", "swimming_pool", "taxi",
-                    "atm", "telephone", "waste_basket", "drinking_water", "sanitary_dump_station", "water_point", "biergarten", "bench", "give_way", "access",
-                    "noexit", "outdoor_seating", "goods", "second_hand", "atv", "tobacco", "household", "ski", "ice_cream", "vacant", "car", "fishing",
-                    "toilet", "shelter", "handrail", "monorail", "unisex", "private", "exit", "video", "window", "laundry", "table", "steps", "fixme")));
+    public static final Set<String> NOT_SECOND_LEVEL_KEYS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("phone", "health", "census", "postal_code",
+            "maxspeed", "designated", "heritage", "incline", "network", "level", "motorcycle", "bicycle", "snowmobile", "organic", "organic_only", "fireplace",
+            "boat", "bar", "compressed_air", "swimming_pool", "taxi", "atm", "telephone", "waste_basket", "drinking_water", "sanitary_dump_station",
+            "water_point", "biergarten", "bench", "give_way", "access", "noexit", "outdoor_seating", "goods", "second_hand", "atv", "tobacco", "household",
+            "ski", "ice_cream", "vacant", "car", "fishing", "toilet", "shelter", "handrail", "monorail", "unisex", "private", "exit", "video", "window",
+            "laundry", "table", "steps", "fixme")));
 
     /**
      * 2nd level keys/tags that are not used with certain tags
