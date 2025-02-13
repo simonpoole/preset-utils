@@ -17,7 +17,7 @@ public class Tags {
             "emergency", "entrance", "ford", "geological", "golf", "harbour", "healthcare", "highway", "historic", "landcover", "landuse", "leisure", "indoor",
             "man_made", "military", "mountain_pass", "natural", "office", "pipeline", "piste:type", "place", "playground", "police", "power",
             "public_transport", "railway", "roller_coaster", "roof:edge", "roof:ridge", "seamark:type", "shop", "telecom", "tourism", "traffic_calming",
-            "traffic_sign", "traffic_sign:backward", "traffic_sign:forward", "type", "waterway",
+            "traffic_sign", "traffic_sign:backward", "traffic_sign:forward", "type", "waterway", "xmas:feature",
             /* the following are those top level keys that make sense in combination with lifecycle keys */
             "abandoned:aerialway", "abandoned:aeroway", "abandoned:amenity", "abandoned:attraction", "abandoned:building", "abandoned:cemetry",
             "abandoned:harbour", "abandoned:healthcare", "abandoned:highway", "abandoned:leisure", "abandoned:man_made", "abandoned:military",
