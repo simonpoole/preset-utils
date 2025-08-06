@@ -1,6 +1,8 @@
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-    xmlns:m="http://josm.openstreetmap.de/tagging-preset-1.0">
+    xmlns:m="http://josm.openstreetmap.de/tagging-preset-1.0"
+    xmlns:str="http://exslt.org/strings"
+    extension-element-prefixes="str">
     <!--empty template suppresses attributes -->
     <xsl:template match="@name[../@deprecated]">
         <xsl:attribute name="name">
@@ -24,6 +26,24 @@
         <xsl:attribute name="short_description">
             <xsl:value-of select="." />
             <xsl:text> (deprecated)</xsl:text>
+        </xsl:attribute>
+    </xsl:template>
+    <xsl:template match="@type[contains(.,'area')]">
+        <xsl:attribute name="type">
+            <xsl:for-each select="str:tokenize(.,',')">
+              <xsl:choose>
+                <xsl:when test=".='area'">
+                  <xsl:text>closedway,multipolygon</xsl:text>
+                </xsl:when>
+                <xsl:otherwise>
+                  <!-- don't output closedway and multipolygon values that are already present -->
+                  <xsl:if test=". != 'closedway' and .!= 'multipolygon'">
+                    <xsl:value-of select="." />
+                  </xsl:if>
+                </xsl:otherwise>
+              </xsl:choose>
+              <xsl:if test="position() != last()">,</xsl:if>  
+            </xsl:for-each>
         </xsl:attribute>
     </xsl:template>
     <xsl:template match="@deprecated" />
