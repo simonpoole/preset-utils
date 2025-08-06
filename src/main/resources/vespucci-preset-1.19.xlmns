@@ -149,7 +149,7 @@
         <attribute name="type" type="string">
             <annotation>
                 <documentation><![CDATA[
-                    When specified, only objects of the given type will work with this tagging preset. Can be "node", "way", "closedway", "multipolygon", "relation" or any comma separated combination of them. Note that "multipolygon" is not included in "relation", so if the preset should apply for multipolygons and other relation types, you need to specify both: "multipolygon,relation". Also used in the <role> tag to specify which object types are allowed for a specific relation member.
+                    When specified, only objects of the given type will work with this tagging preset. Can be "node", "way", "closedway", "area", "multipolygon", "relation" or any comma separated combination of them. Note that "multipolygon" is not included in "relation", so if the preset should apply for multipolygons and other relation types, you need to specify both: "multipolygon,relation". Also used in the <role> tag to specify which object types are allowed for a specific relation member.
                 ]]></documentation>
             </annotation>
         </attribute>
